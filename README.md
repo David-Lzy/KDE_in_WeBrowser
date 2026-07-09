@@ -32,7 +32,7 @@ For a fast non-interactive local template:
 
 ```bash
 scripts/install.sh --preset balanced
-docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml up -d
+docker compose --env-file .env -f compose/webtop-kde.yml up -d
 ```
 
 For Baota/BT Panel, render a single Compose file plus a full `.env` file:

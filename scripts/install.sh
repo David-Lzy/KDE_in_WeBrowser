@@ -23,7 +23,7 @@ Options:
   --with-frpc              Print the compose command with --profile frpc.
   --skip-pam-helper        Do not install the host PAM auth helper.
   --start                  Run docker compose up -d after generating files.
-  --force                  Overwrite .env and compose.local.yml without prompt.
+  --force                  Overwrite .env and generated compose override without prompt.
   -h, --help               Show this help.
 EOF
 }
@@ -144,9 +144,11 @@ if confirm_overwrite ".env"; then
   echo "wrote .env using ${preset} preset"
 fi
 
-if confirm_overwrite "compose.local.yml"; then
+if [[ "${#mounts[@]}" -gt 0 ]] && confirm_overwrite "compose.local.yml"; then
   write_compose_local
   echo "wrote compose.local.yml"
+elif [[ "${#mounts[@]}" -eq 0 ]]; then
+  echo "no extra mounts requested; compose.local.yml not modified"
 fi
 
 scripts/ensure-gateway-tls.sh
@@ -173,7 +175,10 @@ elif [[ "${gateway_auth_provider}" == "authelia" ]]; then
   echo "set AUTHELIA_BOOTSTRAP_PASSWORD and run scripts/ensure-authelia-config.sh before first start"
 fi
 
-compose_cmd=(docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml)
+compose_cmd=(docker compose --env-file .env -f compose/webtop-kde.yml)
+if [[ -f compose.local.yml ]]; then
+  compose_cmd+=(-f compose.local.yml)
+fi
 if [[ "${with_wechat_qq}" == "true" ]]; then
   compose_cmd+=(-f compose/wechat-qq.override.yml)
 fi

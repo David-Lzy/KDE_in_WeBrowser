@@ -16,7 +16,8 @@ The wizard:
 - treats the Authelia bootstrap password as a one-time password copied into
   Authelia's file user database. Use the selected host account password here if
   you want the browser login to match that account.
-- writes a customized `.env` and `compose.local.yml`.
+- writes a customized `.env`; writes `compose.local.yml` only when extra bind
+  mounts are requested.
 - can optionally write `modules/frpc/frpc.toml`, generate local TLS, generate
   install the host PAM auth helper, generate Authelia config, set up the host
   SSH key, validate Compose, and start the stack.
@@ -41,11 +42,9 @@ scripts/configure-deployment.sh \
   --defaults \
   --force \
   --no-actions \
-  --env-file "${tmpdir}/.env" \
-  --compose-file "${tmpdir}/compose.local.yml"
+  --env-file "${tmpdir}/.env"
 docker compose --env-file "${tmpdir}/.env" \
   -f compose/webtop-kde.yml \
-  -f "${tmpdir}/compose.local.yml" \
   config --quiet
 ```
 
@@ -88,7 +87,7 @@ handled by the project PAM auth helper.
 The installer writes:
 
 - `.env`
-- `compose.local.yml`
+- `compose.local.yml` only when extra `--mount` entries are requested
 
 It backs up existing local deployment files under `backups/<timestamp>/` before
 overwriting, and it asks before replacing existing files unless `--force` is
@@ -97,8 +96,11 @@ provided.
 Start the stack:
 
 ```bash
-docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml up -d
+docker compose --env-file .env -f compose/webtop-kde.yml up -d
 ```
+
+If you use `--mount` or keep a hand-written local override, include it with
+`-f compose.local.yml`.
 
 For Baota/BT Panel, render the panel-facing files after `.env` is ready:
 

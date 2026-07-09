@@ -155,9 +155,9 @@ wizard_smoke_check() {
     --compose-file "${tmp_dir}/compose.local.yml" \
     --frpc-file "${tmp_dir}/frpc.toml" >/tmp/kde-in-webbrowser-wizard-smoke.log \
     && test -s "${tmp_dir}/.env" \
-    && test -s "${tmp_dir}/compose.local.yml" \
+    && test ! -e "${tmp_dir}/compose.local.yml" \
     && rg -q '^FRPC_CONFIG_FILE=' "${tmp_dir}/.env" \
-    && docker compose --env-file "${tmp_dir}/.env" -f compose/webtop-kde.yml -f "${tmp_dir}/compose.local.yml" config --quiet \
+    && docker compose --env-file "${tmp_dir}/.env" -f compose/webtop-kde.yml config --quiet \
     || status=$?
 
   rm -rf "${tmp_dir}"
@@ -232,8 +232,8 @@ live_stack_check() {
     skip "live stack" "set VALIDATE_LIVE=1 to require running-container checks"
     return 0
   fi
-  if [[ ! -f .env || ! -f compose.local.yml ]]; then
-    printf 'VALIDATE_LIVE=1 requires .env and compose.local.yml\n' >&2
+  if [[ ! -f .env ]]; then
+    printf 'VALIDATE_LIVE=1 requires .env\n' >&2
     return 1
   fi
 
@@ -244,7 +244,12 @@ live_stack_check() {
   auth_provider="$(awk -F= '$1 == "GATEWAY_AUTH_PROVIDER" { print $2 }' .env | tail -n 1)"
   auth_provider="${auth_provider:-pam}"
 
-  docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml ps \
+  local compose_cmd=(docker compose --env-file .env -f compose/webtop-kde.yml)
+  if [[ -f compose.local.yml ]]; then
+    compose_cmd+=(-f compose.local.yml)
+  fi
+
+  "${compose_cmd[@]}" ps \
     && curl -kfsS "https://127.0.0.1:${gateway_port}/healthz" | rg -q "\"auth\":\"${auth_provider}\"" \
     && if [[ "${auth_provider}" == "pam" ]]; then
       test "$(curl -ksS -o /dev/null -w '%{http_code}' "https://127.0.0.1:${gateway_port}/auth/login")" = "200"

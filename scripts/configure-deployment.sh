@@ -40,7 +40,8 @@ and host SSH key configuration.
 Options:
   --language zh|en       Use Chinese or English prompts. Otherwise ask first.
   --env-file PATH        Output env file. Default: .env
-  --compose-file PATH    Output local Compose override. Default: compose.local.yml
+  --compose-file PATH    Output local Compose override when extra mounts are added.
+                         Default: compose.local.yml
   --frpc-file PATH       Output frpc config. Default: modules/frpc/frpc.toml
   --defaults             Accept recommended defaults for all optional prompts.
   --force                Overwrite output files after backing them up.
@@ -538,7 +539,10 @@ run_post_actions() {
     fi
   fi
 
-  local compose_cmd=(docker compose --env-file "${env_file}" -f compose/webtop-kde.yml -f "${compose_local_file}")
+  local compose_cmd=(docker compose --env-file "${env_file}" -f compose/webtop-kde.yml)
+  if [[ -f "${compose_local_file}" ]]; then
+    compose_cmd+=(-f "${compose_local_file}")
+  fi
   if [[ "${frpc_enabled}" == "true" ]]; then
     compose_cmd+=(--profile frpc)
   fi
@@ -723,13 +727,17 @@ if [[ "${start_stack}" != "true" ]]; then
 fi
 
 confirm_output_path "${env_file}"
-confirm_output_path "${compose_local_file}"
+if [[ "${#mounts[@]}" -gt 0 ]]; then
+  confirm_output_path "${compose_local_file}"
+fi
 if [[ "${frpc_enabled}" == "true" ]]; then
   confirm_output_path "${frpc_file}"
 fi
 
 write_env_file
-write_compose_local
+if [[ "${#mounts[@]}" -gt 0 ]]; then
+  write_compose_local
+fi
 if [[ "${frpc_enabled}" == "true" ]]; then
   write_frpc_config
 fi
@@ -737,7 +745,12 @@ fi
 run_post_actions
 
 say "已写入：${env_file}" "Wrote: ${env_file}"
-say "已写入：${compose_local_file}" "Wrote: ${compose_local_file}"
+if [[ "${#mounts[@]}" -gt 0 ]]; then
+  say "已写入：${compose_local_file}" "Wrote: ${compose_local_file}"
+else
+  say "未添加额外挂载；compose override 未修改。" \
+      "No extra mounts were added; compose override was not modified."
+fi
 if [[ "${frpc_enabled}" == "true" ]]; then
   say "已写入：${frpc_file}" "Wrote: ${frpc_file}"
 else

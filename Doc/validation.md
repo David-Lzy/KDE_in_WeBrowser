@@ -17,9 +17,9 @@ To include checks against an already running local deployment:
 VALIDATE_LIVE=1 scripts/validate.sh
 ```
 
-`VALIDATE_LIVE=1` requires `.env` and `compose.local.yml`. It checks the Compose
-state, HTTPS gateway health endpoint, and that unauthenticated HTTPS and
-WebSocket requests are redirected to login.
+`VALIDATE_LIVE=1` requires `.env`. It includes `compose.local.yml` only when the
+file exists, then checks the Compose state, HTTPS gateway health endpoint, and
+that unauthenticated HTTPS and WebSocket requests are redirected to login.
 
 ## Manual Browser Checklist
 

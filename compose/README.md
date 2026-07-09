@@ -14,7 +14,7 @@ For a minimal scripted setup:
 
 ```bash
 scripts/install.sh --preset balanced
-docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml up -d
+docker compose --env-file .env -f compose/webtop-kde.yml up -d
 ```
 
 Baota/BT Panel should use the generated pair:
