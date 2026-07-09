@@ -1,0 +1,48 @@
+# Local runtime configuration
+.env
+.env.*
+!.env.example
+compose.local.yml
+
+# Runtime state and mounted homes
+config/
+*/config/
+home/
+data/
+cache/
+logs/
+ssl/
+
+# Secrets and certificates
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+*token*
+*secret*
+frpc.toml
+**/frpc/frpc.toml
+!**/frpc/*.example.toml
+
+# Imported large/private artifacts
+_incoming/
+windows-artifacts/
+
+# WeChat/QQ user data
+.xwechat/
+xwechat_files/
+QQ/
+Tencent Files/
+WeChat Files/
+wxid_*/
+WMPF/
+
+# Build and dependency outputs
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+.cache/
+
