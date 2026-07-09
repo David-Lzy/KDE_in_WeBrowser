@@ -8,6 +8,7 @@ force="false"
 start_stack="false"
 with_frpc="false"
 skip_pam_helper="false"
+skip_terminal_assets="false"
 mounts=()
 
 usage() {
@@ -20,6 +21,7 @@ Options:
   --mount SPEC             Add a local compose bind mount, host:container[:mode].
   --with-frpc              Print the compose command with --profile frpc.
   --skip-pam-helper        Do not install the host PAM auth helper.
+  --skip-terminal-assets   Do not copy host fonts and Konsole settings.
   --start                  Run docker compose up -d after generating files.
   --force                  Overwrite .env and generated compose override without prompt.
   -h, --help               Show this help.
@@ -46,6 +48,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-pam-helper)
       skip_pam_helper="true"
+      shift
+      ;;
+    --skip-terminal-assets)
+      skip_terminal_assets="true"
       shift
       ;;
     --start)
@@ -154,6 +160,27 @@ read_env_key() {
 
 gateway_auth_provider="$(read_env_key GATEWAY_AUTH_PROVIDER)"
 gateway_auth_provider="${gateway_auth_provider:-pam}"
+
+terminal_integration="$(read_env_key ENABLE_TERMINAL_INTEGRATION)"
+terminal_integration="${terminal_integration:-true}"
+sync_terminal_assets="$(read_env_key SYNC_HOST_TERMINAL_ASSETS)"
+sync_terminal_assets="${sync_terminal_assets:-true}"
+sync_system_font_matches="$(read_env_key SYNC_HOST_TERMINAL_SYSTEM_FONT_MATCHES)"
+sync_system_font_matches="${sync_system_font_matches:-true}"
+
+if [[ "${terminal_integration}" == "true" && "${sync_terminal_assets}" == "true" && "${skip_terminal_assets}" != "true" ]]; then
+  sync_args=(--host-user "${host_user}" --env-file .env)
+  sync_target_home="$(read_env_key HOST_HOME)"
+  if [[ -n "${sync_target_home}" ]]; then
+    sync_args+=(--target-home "${sync_target_home}")
+  fi
+  if [[ "${sync_system_font_matches}" != "true" ]]; then
+    sync_args+=(--no-system-font-matches)
+  fi
+  scripts/sync-host-terminal-assets.sh "${sync_args[@]}"
+elif [[ "${skip_terminal_assets}" == "true" ]]; then
+  echo "skipped host terminal asset sync"
+fi
 
 if [[ "${gateway_auth_provider}" == "pam" ]]; then
   if [[ "${skip_pam_helper}" == "true" ]]; then

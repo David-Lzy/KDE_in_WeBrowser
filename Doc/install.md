@@ -18,9 +18,10 @@ The wizard:
   you want the browser login to match that account.
 - writes a customized `.env`; writes `compose.local.yml` only when extra bind
   mounts are requested.
-- can optionally write `modules/frpc/frpc.toml`, generate local TLS, generate
-  install the host PAM auth helper, generate Authelia config, set up the host
-  SSH key, validate Compose, and start the stack.
+- can optionally write `modules/frpc/frpc.toml`, generate local TLS, install
+  the host PAM auth helper, generate Authelia config, sync host
+  terminal fonts/Konsole settings, set up the host SSH key, validate Compose,
+  and start the stack.
 
 Fully unattended local setup with recommended defaults:
 

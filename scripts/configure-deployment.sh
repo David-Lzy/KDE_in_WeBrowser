@@ -472,7 +472,7 @@ write_env_file() {
   write_env_section "Wayland/Xwayland clipboard" \
     ENABLE_XWAYLAND_CLIPBOARD_BRIDGE
   write_env_section "Terminal integration" \
-    ENABLE_TERMINAL_INTEGRATION HOST_SSH_HOST HOST_SSH_PORT HOST_SSH_TARGET HOST_SSH_KEY
+    ENABLE_TERMINAL_INTEGRATION HOST_SSH_HOST HOST_SSH_PORT HOST_SSH_TARGET HOST_SSH_KEY SYNC_HOST_TERMINAL_ASSETS SYNC_HOST_TERMINAL_SYSTEM_FONT_MATCHES
   write_env_section "KDE theme sync" \
     ENABLE_THEME_SYNC THEME_SYNC_LIGHT_SCHEME THEME_SYNC_DARK_SCHEME THEME_SYNC_LIGHT_LOOK_AND_FEEL THEME_SYNC_DARK_LOOK_AND_FEEL
   write_env_section "WeChat/QQ module" \
@@ -494,8 +494,8 @@ apply_bandwidth_preset() {
 
 run_post_actions() {
   if [[ "${no_actions}" == "true" ]]; then
-    say "已跳过 TLS、PAM helper、Authelia、SSH key 和启动动作（--no-actions）。" \
-        "Skipped TLS, PAM helper, Authelia, SSH key, and start actions (--no-actions)."
+    say "已跳过 TLS、PAM helper、Authelia、终端资产同步、SSH key 和启动动作（--no-actions）。" \
+        "Skipped TLS, PAM helper, Authelia, terminal asset sync, SSH key, and start actions (--no-actions)."
     return
   fi
 
@@ -528,6 +528,14 @@ run_post_actions() {
 
   if [[ "${install_pam_auth_helper}" == "true" ]]; then
     scripts/install-pam-auth-helper.sh --env-file "${env_file}" --pam-service "${env[PAM_AUTH_SERVICE]}"
+  fi
+
+  if [[ "${env[ENABLE_TERMINAL_INTEGRATION]}" == "true" && "${env[SYNC_HOST_TERMINAL_ASSETS]:-true}" == "true" ]]; then
+    sync_args=(--host-user "${env[HOST_USER]}" --target-home "${env[HOST_HOME]}" --env-file "${env_file}")
+    if [[ "${env[SYNC_HOST_TERMINAL_SYSTEM_FONT_MATCHES]:-true}" != "true" ]]; then
+      sync_args+=(--no-system-font-matches)
+    fi
+    scripts/sync-host-terminal-assets.sh "${sync_args[@]}"
   fi
 
   local compose_cmd=(docker compose --env-file "${env_file}" -f compose/webtop-kde.yml)
@@ -631,6 +639,8 @@ if [[ "${env[ENABLE_TERMINAL_INTEGRATION]}" == "true" ]]; then
   env[HOST_SSH_PORT]="$(prompt_default "Host SSH 端口" "Host SSH port" "${env[HOST_SSH_PORT]}")"
   env[HOST_SSH_TARGET]="$(prompt_default "Host SSH 完整目标，留空自动用 HOST_USER@HOST_SSH_HOST" "Full Host SSH target; empty uses HOST_USER@HOST_SSH_HOST" "${env[HOST_SSH_TARGET]}")"
   env[HOST_SSH_KEY]="$(prompt_default "Host SSH 私钥路径（容器内）" "Host SSH private key path inside container" "${env[HOST_SSH_KEY]}")"
+  env[SYNC_HOST_TERMINAL_ASSETS]="$(prompt_bool "同步宿主字体和 Konsole 配置到桌面 home？" "Sync host fonts and Konsole settings into the desktop home?" "${env[SYNC_HOST_TERMINAL_ASSETS]:-true}")"
+  env[SYNC_HOST_TERMINAL_SYSTEM_FONT_MATCHES]="$(prompt_bool "同步 Konsole profile 引用到的系统字体文件？" "Sync system font files referenced by Konsole profiles?" "${env[SYNC_HOST_TERMINAL_SYSTEM_FONT_MATCHES]:-true}")"
   setup_host_ssh_key="$(prompt_bool "现在配置 Host SSH 免密 key？" "Configure passwordless Host SSH key now?" true)"
 fi
 

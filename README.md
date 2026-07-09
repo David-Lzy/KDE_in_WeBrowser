@@ -142,6 +142,7 @@ Most deployment settings live in `.env`:
 - host user, container display user, and hostname
 - language, timezone, theme sync, and DPI sync
 - Selkies bandwidth/quality settings
+- terminal integration, host SSH, and terminal font/config sync
 - WeChat/QQ install and autostart toggles
 - WeChat/QQ data paths
 - PAM helper and optional Authelia settings
