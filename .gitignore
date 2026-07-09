@@ -5,6 +5,10 @@
 !.env.*.example
 compose.local.yml
 backups/
+.agent/
+.local/
+output/
+desktop-control/
 
 # Runtime state and mounted homes
 config/
@@ -50,3 +54,11 @@ build/
 .playwright-cli/
 __pycache__/
 *.py[cod]
+
+# Editor and OS noise
+*~
+*.tmp
+*.bak
+*.old
+*.orig
+.DS_Store

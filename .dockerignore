@@ -2,6 +2,8 @@
 .agent
 .local
 _incoming
+output
+desktop-control
 
 .env
 .env.*
@@ -20,5 +22,13 @@ build
 .next
 .turbo
 .cache
+.playwright-cli
 __pycache__
 *.py[cod]
+
+*~
+*.tmp
+*.bak
+*.old
+*.orig
+.DS_Store

@@ -5,8 +5,6 @@ The active gateway is split into two Docker services:
 - `gateway-nginx`: public HTTPS browser entrypoint using NGINX `auth_request`.
 - `authelia`: authentication portal and authorization endpoint.
 
-The old Node/Better Auth PAM gateway is not part of the active Compose stack.
-
 ## Gateway Flow
 
 1. Browser requests `/`.

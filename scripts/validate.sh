@@ -134,6 +134,7 @@ secret_scan_check() {
   local file_matches
   local matches=""
   while IFS= read -r -d '' file; do
+    [[ -f "${file}" ]] || continue
     file_matches="$(
       rg -n --pcre2 \
         'li3\.141592li|BEGIN [A-Z ]*PRIVATE KEY|token\s*=\s*"(?!REPLACE_ME)"|serverAddr\s*=\s*"(?!FRPS_PUBLIC_HOST_OR_IP)"|45\.77\.|170\.64\.|100\.64\.0\.1|10\.10\.2\.210' \

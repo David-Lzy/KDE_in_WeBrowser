@@ -59,6 +59,7 @@ Terminal-related controls:
 - `HOST_SSH_HOST`
 - `HOST_SSH_PORT`
 - `HOST_SSH_TARGET`
+- `HOST_SSH_KEY`
 
 Theme sync controls:
 
