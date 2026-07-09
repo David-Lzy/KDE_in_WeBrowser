@@ -15,9 +15,11 @@ The current base desktop template uses LinuxServer Webtop:
 The Compose template lives at `compose/webtop-kde.yml`.
 
 The browser entrypoint is `gateway-nginx`, which is published on the host and
-uses `auth_request` against Authelia. Raw Webtop ports are not published by
-default. The same NGINX container also provides a TLS listener on `8443` for
-host and frpc HTTPS exposure.
+uses `auth_request` against the configured auth provider. The default provider
+is the host-side PAM auth helper; Authelia remains available as an optional
+fallback. Raw Webtop ports are not published by default. The same NGINX
+container also provides a TLS listener on `8443` for host and frpc HTTPS
+exposure.
 
 ## Init Extensions
 

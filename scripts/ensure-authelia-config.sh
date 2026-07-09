@@ -190,7 +190,7 @@ fi
 if [[ -n "${AUTHELIA_BOOTSTRAP_PASSWORD:-}" || ! -s "${users_file}" ]]; then
   bootstrap_password="${AUTHELIA_BOOTSTRAP_PASSWORD:-${PASSWORD:-}}"
   if [[ -z "${bootstrap_password}" ]]; then
-    echo "set AUTHELIA_BOOTSTRAP_PASSWORD for the initial Authelia user" >&2
+    echo "set AUTHELIA_BOOTSTRAP_PASSWORD for the initial Authelia user; normally use the selected host account password if you want matching login credentials" >&2
     exit 1
   fi
   hash_output="$(

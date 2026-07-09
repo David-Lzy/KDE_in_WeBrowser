@@ -8,6 +8,7 @@ force="false"
 start_stack="false"
 with_wechat_qq="false"
 with_frpc="false"
+skip_pam_helper="false"
 mounts=()
 
 usage() {
@@ -20,6 +21,7 @@ Options:
   --mount SPEC             Add a local compose bind mount, host:container[:mode].
   --with-wechat-qq         Print the compose command with the WeChat/QQ override.
   --with-frpc              Print the compose command with --profile frpc.
+  --skip-pam-helper        Do not install the host PAM auth helper.
   --start                  Run docker compose up -d after generating files.
   --force                  Overwrite .env and compose.local.yml without prompt.
   -h, --help               Show this help.
@@ -46,6 +48,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --with-frpc)
       with_frpc="true"
+      shift
+      ;;
+    --skip-pam-helper)
+      skip_pam_helper="true"
       shift
       ;;
     --start)
@@ -144,9 +150,26 @@ if confirm_overwrite "compose.local.yml"; then
 fi
 
 scripts/ensure-gateway-tls.sh
-if [[ -n "${AUTHELIA_BOOTSTRAP_PASSWORD:-}" ]]; then
+
+read_env_key() {
+  local key="$1"
+  awk -F= -v target="${key}" '$1 == target { print $2 }' .env | tail -n 1 | sed -e 's/^"//' -e 's/"$//'
+}
+
+gateway_auth_provider="$(read_env_key GATEWAY_AUTH_PROVIDER)"
+gateway_auth_provider="${gateway_auth_provider:-pam}"
+
+if [[ "${gateway_auth_provider}" == "pam" ]]; then
+  if [[ "${skip_pam_helper}" == "true" ]]; then
+    echo "skipped PAM auth helper install"
+  else
+    scripts/install-pam-auth-helper.sh --env-file .env
+  fi
+fi
+
+if [[ "${gateway_auth_provider}" == "authelia" && -n "${AUTHELIA_BOOTSTRAP_PASSWORD:-}" ]]; then
   scripts/ensure-authelia-config.sh
-else
+elif [[ "${gateway_auth_provider}" == "authelia" ]]; then
   echo "set AUTHELIA_BOOTSTRAP_PASSWORD and run scripts/ensure-authelia-config.sh before first start"
 fi
 

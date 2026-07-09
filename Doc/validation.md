@@ -27,9 +27,9 @@ Use the gateway URL from `.env`, usually `https://127.0.0.1:18080`.
 
 | Scenario | Expected result |
 | --- | --- |
-| Gateway login success | Correct Authelia username/password enters the desktop. |
+| Gateway login success | Correct configured auth provider username/password enters the desktop. |
 | Gateway wrong password | Login returns an invalid credentials error. |
-| Repeated wrong password lockout | After the configured failure count, Authelia temporarily blocks retries. |
+| Repeated wrong password lockout | The configured provider blocks or rejects repeated bad credentials. |
 | Unauthenticated Webtop HTTPS blocked | Opening `/` without a session redirects to `/authelia/`. |
 | Unauthenticated WebSocket blocked | A direct WebSocket upgrade without a session redirects or fails auth. |
 | KDE starts | KDE Plasma desktop reaches an interactive state. |

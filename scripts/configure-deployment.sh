@@ -26,6 +26,7 @@ frpc_web_port="7400"
 authelia_bootstrap_password=""
 generate_authelia=false
 generate_tls=true
+install_pam_auth_helper=false
 setup_host_ssh_key=false
 
 usage() {
@@ -33,8 +34,8 @@ usage() {
 usage: scripts/configure-deployment.sh [options]
 
 Interactive bilingual deployment wizard. It writes a local env file and
-compose override, and can optionally generate TLS, Authelia, frpc, and host SSH
-key configuration.
+compose override, and can optionally generate TLS, PAM auth, Authelia, frpc,
+and host SSH key configuration.
 
 Options:
   --language zh|en       Use Chinese or English prompts. Otherwise ask first.
@@ -476,7 +477,11 @@ write_env_file() {
   write_env_section "WeChat/QQ module" \
     ENABLE_WECHAT_QQ_MODULE INSTALL_WECHAT INSTALL_QQ INSTALL_PCMANFM AUTO_START_WECHAT AUTO_START_QQ WECHAT_PROFILE_DIR WECHAT_FILES_DIR QQ_DATA_DIR
   write_env_section "Auth gateway" \
-    GATEWAY_BIND GATEWAY_PORT GATEWAY_PUBLIC_BASE_URL GATEWAY_TLS_CERT GATEWAY_TLS_KEY GATEWAY_TLS_SANS AUTHELIA_VERSION AUTHELIA_CONFIG_DIR AUTHELIA_PUBLIC_BASE_URLS AUTHELIA_USER AUTHELIA_DISPLAY_NAME AUTHELIA_EMAIL
+    GATEWAY_BIND GATEWAY_PORT GATEWAY_PUBLIC_BASE_URL GATEWAY_AUTH_PROVIDER GATEWAY_AUTH_INTERNAL_URI GATEWAY_TLS_CERT GATEWAY_TLS_KEY GATEWAY_TLS_SANS
+  write_env_section "PAM auth helper" \
+    PAM_AUTH_RUN_DIR PAM_AUTH_STATE_DIR PAM_AUTH_SOCKET_CONTAINER PAM_AUTH_SERVICE PAM_AUTH_ALLOWED_USERS PAM_AUTH_SESSION_TTL_SECONDS PAM_AUTH_COOKIE_NAME
+  write_env_section "Authelia" \
+    AUTHELIA_VERSION AUTHELIA_CONFIG_DIR AUTHELIA_PUBLIC_BASE_URLS AUTHELIA_USER AUTHELIA_DISPLAY_NAME AUTHELIA_EMAIL
   write_env_section "frpc" \
     FRPC_CONFIG_FILE
 }
@@ -488,8 +493,8 @@ apply_bandwidth_preset() {
 
 run_post_actions() {
   if [[ "${no_actions}" == "true" ]]; then
-    say "已跳过 TLS、Authelia、SSH key 和启动动作（--no-actions）。" \
-        "Skipped TLS, Authelia, SSH key, and start actions (--no-actions)."
+    say "已跳过 TLS、PAM helper、Authelia、SSH key 和启动动作（--no-actions）。" \
+        "Skipped TLS, PAM helper, Authelia, SSH key, and start actions (--no-actions)."
     return
   fi
 
@@ -518,6 +523,10 @@ run_post_actions() {
         HOST_USER="${env[HOST_USER]}" \
         scripts/ensure-authelia-config.sh
     fi
+  fi
+
+  if [[ "${install_pam_auth_helper}" == "true" ]]; then
+    scripts/install-pam-auth-helper.sh --env-file "${env_file}" --pam-service "${env[PAM_AUTH_SERVICE]}"
   fi
 
   if [[ "${setup_host_ssh_key}" == "true" ]]; then
@@ -634,6 +643,24 @@ env[GATEWAY_BIND]="$(prompt_default "网关监听地址" "Gateway bind address" 
 env[GATEWAY_PORT]="$(prompt_default "网关 HTTPS 端口" "Gateway HTTPS port" "${env[GATEWAY_PORT]}")"
 default_public_url="https://127.0.0.1:${env[GATEWAY_PORT]}"
 env[GATEWAY_PUBLIC_BASE_URL]="$(prompt_default "主要访问 URL" "Primary access URL" "${default_public_url}")"
+env[GATEWAY_AUTH_PROVIDER]="$(prompt_choice "网关认证方式" "Gateway authentication provider" "${env[GATEWAY_AUTH_PROVIDER]:-pam}" "pam|authelia")"
+case "${env[GATEWAY_AUTH_PROVIDER]}" in
+  pam)
+    env[GATEWAY_AUTH_INTERNAL_URI]="/internal/pam/authz"
+    env[PAM_AUTH_RUN_DIR]="$(prompt_default "PAM helper socket 目录（宿主）" "PAM helper socket directory on host" "${env[PAM_AUTH_RUN_DIR]}")"
+    env[PAM_AUTH_STATE_DIR]="$(prompt_default "PAM helper 状态目录（宿主）" "PAM helper state directory on host" "${env[PAM_AUTH_STATE_DIR]}")"
+    env[PAM_AUTH_SOCKET_CONTAINER]="$(prompt_default "PAM helper socket 路径（NGINX 容器内）" "PAM helper socket path inside NGINX container" "${env[PAM_AUTH_SOCKET_CONTAINER]}")"
+    env[PAM_AUTH_SERVICE]="$(prompt_default "PAM service 名称" "PAM service name" "${env[PAM_AUTH_SERVICE]}")"
+    env[PAM_AUTH_ALLOWED_USERS]="$(prompt_default "允许登录的宿主用户，逗号分隔" "Allowed host users, comma-separated" "${env[PAM_AUTH_ALLOWED_USERS]}")"
+    env[PAM_AUTH_SESSION_TTL_SECONDS]="$(prompt_default "PAM 登录会话秒数" "PAM login session seconds" "${env[PAM_AUTH_SESSION_TTL_SECONDS]}")"
+    env[PAM_AUTH_COOKIE_NAME]="$(prompt_default "PAM 登录 cookie 名称" "PAM login cookie name" "${env[PAM_AUTH_COOKIE_NAME]}")"
+    install_pam_auth_helper="$(prompt_bool "现在安装/启动宿主 PAM auth helper？" "Install/start the host PAM auth helper now?" true)"
+    ;;
+  authelia)
+    env[GATEWAY_AUTH_INTERNAL_URI]="/internal/authelia/authz"
+    install_pam_auth_helper=false
+    ;;
+esac
 
 frpc_enabled="$(prompt_bool "是否生成并启用 frpc 配置？" "Generate and enable frpc config?" false)"
 if [[ "${frpc_enabled}" == "true" ]]; then
@@ -672,9 +699,14 @@ env[AUTHELIA_DISPLAY_NAME]="$(prompt_default "Authelia 显示名" "Authelia disp
 env[AUTHELIA_EMAIL]="$(prompt_default "Authelia 邮箱" "Authelia email" "${env[AUTHELIA_EMAIL]}")"
 
 generate_tls="$(prompt_bool "现在生成/确认本地 TLS 证书？" "Generate/ensure local TLS certificate now?" true)"
-generate_authelia="$(prompt_bool "现在生成/更新 Authelia 配置？" "Generate/update Authelia config now?" true)"
+if [[ "${env[GATEWAY_AUTH_PROVIDER]}" == "authelia" ]]; then
+  generate_authelia_default=true
+else
+  generate_authelia_default=false
+fi
+generate_authelia="$(prompt_bool "现在生成/更新 Authelia 配置？" "Generate/update Authelia config now?" "${generate_authelia_default}")"
 if [[ "${generate_authelia}" == "true" ]]; then
-  authelia_bootstrap_password="$(prompt_required_or_skip "Authelia 初始密码" "Authelia bootstrap password")"
+  authelia_bootstrap_password="$(prompt_required_or_skip "Authelia 初始密码（建议输入宿主账号密码以保持登录体验一致）" "Authelia bootstrap password (usually your host account password for a consistent login)")"
   if [[ "${authelia_bootstrap_password}" == "__SKIP__" ]]; then
     generate_authelia=false
   fi

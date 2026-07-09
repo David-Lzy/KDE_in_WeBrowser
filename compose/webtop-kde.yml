@@ -107,12 +107,17 @@ services:
     expose:
       - "8080"
       - "8443"
+    environment:
+      GATEWAY_AUTH_PROVIDER: "${GATEWAY_AUTH_PROVIDER:-pam}"
+      GATEWAY_AUTH_INTERNAL_URI: "${GATEWAY_AUTH_INTERNAL_URI:-/internal/pam/authz}"
+      PAM_AUTH_SOCKET_CONTAINER: "${PAM_AUTH_SOCKET_CONTAINER:-/run/kde-pam-auth/pam-helper.sock}"
     ports:
       - "${GATEWAY_BIND:-127.0.0.1}:${GATEWAY_PORT:-18080}:8443"
     volumes:
       - "../gateway/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro"
       - "${GATEWAY_TLS_CERT:-../ssl/kde-webtop.crt}:/etc/nginx/certs/kde-webtop.crt:ro"
       - "${GATEWAY_TLS_KEY:-../ssl/kde-webtop.key}:/etc/nginx/certs/kde-webtop.key:ro"
+      - "${PAM_AUTH_RUN_DIR:-../data/pam-auth/run}:/run/kde-pam-auth"
 
   frpc:
     image: snowdreamtech/frpc:nightly

@@ -14,15 +14,16 @@ For a minimal scripted setup:
 
 ```bash
 scripts/install.sh --preset balanced
-AUTHELIA_BOOTSTRAP_PASSWORD='change-this' scripts/ensure-authelia-config.sh
 docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml up -d
 ```
 
 The template publishes only the TLS listener of `gateway-nginx`, normally on
 `https://127.0.0.1:18080`. LinuxServer Webtop KDE stays inside the Docker
-network on ports `3000` and `3001`. NGINX protects Webtop with Authelia via
-`auth_request` and then proxies authenticated traffic to it. NGINX keeps
-container-local HTTP on `8080`, but that port is not published to the host.
+network on ports `3000` and `3001`. NGINX protects Webtop with `auth_request`
+and then proxies authenticated traffic to it. The default provider is the
+host-side PAM auth helper; Authelia remains available as an optional fallback.
+NGINX keeps container-local HTTP on `8080`, but that port is not published to
+the host.
 
 Runtime state is written to `${HOST_HOME}` because that path is mounted as
 `/config`. The installer sets it to a project-local directory under
@@ -98,9 +99,24 @@ Gateway and Authelia controls:
 - `GATEWAY_BIND`
 - `GATEWAY_PORT`
 - `GATEWAY_PUBLIC_BASE_URL`
+- `GATEWAY_AUTH_PROVIDER`
+- `GATEWAY_AUTH_INTERNAL_URI`
 - `GATEWAY_TLS_CERT`
 - `GATEWAY_TLS_KEY`
 - `GATEWAY_TLS_SANS`
+
+PAM auth helper controls:
+
+- `PAM_AUTH_RUN_DIR`
+- `PAM_AUTH_STATE_DIR`
+- `PAM_AUTH_SOCKET_CONTAINER`
+- `PAM_AUTH_SERVICE`
+- `PAM_AUTH_ALLOWED_USERS`
+- `PAM_AUTH_SESSION_TTL_SECONDS`
+- `PAM_AUTH_COOKIE_NAME`
+
+Authelia fallback controls:
+
 - `AUTHELIA_VERSION`
 - `AUTHELIA_CONFIG_DIR`
 - `AUTHELIA_PUBLIC_BASE_URLS`

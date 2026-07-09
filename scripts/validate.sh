@@ -47,6 +47,7 @@ shell_syntax_check() {
 
 python_check() {
   python3 -m py_compile \
+    gateway/pam-auth/pam-auth-helper.py \
     modules/wechat-qq/root/scripts/window_switcher.py \
     && find gateway modules -type d -name __pycache__ -prune -exec rm -rf {} +
 }
@@ -84,11 +85,15 @@ nginx_check() {
     -subj "/CN=kde-webtop-gateway" >/dev/null 2>&1
 
   docker run --rm \
+    -e GATEWAY_AUTH_PROVIDER=pam \
+    -e GATEWAY_AUTH_INTERNAL_URI=/internal/pam/authz \
+    -e PAM_AUTH_SOCKET_CONTAINER=/run/kde-pam-auth/pam-helper.sock \
     --add-host authelia:127.0.0.1 \
     --add-host webtop-kde:127.0.0.1 \
-    -v "${repo_root}/gateway/nginx/default.conf.template:/etc/nginx/conf.d/default.conf:ro" \
+    -v "${repo_root}/gateway/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro" \
     -v "${tmp_certs}:/etc/nginx/certs:ro" \
-    nginx:mainline-alpine nginx -t
+    nginx:mainline-alpine \
+    sh -c 'envsubst "\${GATEWAY_AUTH_PROVIDER} \${GATEWAY_AUTH_INTERNAL_URI} \${PAM_AUTH_SOCKET_CONTAINER}" < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -t'
   local status=$?
   rm -rf "${tmp_certs}"
   return "${status}"
@@ -104,7 +109,7 @@ install_smoke_check() {
   tmp_mount="$(mktemp -d)"
   local status=0
 
-  scripts/install.sh --force --preset low-bandwidth --mount "${tmp_mount}:/mnt/validate:ro" >/tmp/kde-in-webbrowser-install-smoke.log \
+  scripts/install.sh --force --preset low-bandwidth --skip-pam-helper --mount "${tmp_mount}:/mnt/validate:ro" >/tmp/kde-in-webbrowser-install-smoke.log \
     && test -s .env \
     && test -s compose.local.yml \
     && rg -q '^AUTHELIA_CONFIG_DIR=' .env \
@@ -215,10 +220,17 @@ live_stack_check() {
   local gateway_port
   gateway_port="$(awk -F= '$1 == "GATEWAY_PORT" { print $2 }' .env | tail -n 1)"
   gateway_port="${gateway_port:-18080}"
+  local auth_provider
+  auth_provider="$(awk -F= '$1 == "GATEWAY_AUTH_PROVIDER" { print $2 }' .env | tail -n 1)"
+  auth_provider="${auth_provider:-pam}"
 
   docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml ps \
-    && curl -kfsS "https://127.0.0.1:${gateway_port}/healthz" >/dev/null \
-    && test "$(curl -ksS -o /dev/null -w '%{http_code}' "https://127.0.0.1:${gateway_port}/authelia/")" = "200" \
+    && curl -kfsS "https://127.0.0.1:${gateway_port}/healthz" | rg -q "\"auth\":\"${auth_provider}\"" \
+    && if [[ "${auth_provider}" == "pam" ]]; then
+      test "$(curl -ksS -o /dev/null -w '%{http_code}' "https://127.0.0.1:${gateway_port}/auth/login")" = "200"
+    else
+      test "$(curl -ksS -o /dev/null -w '%{http_code}' "https://127.0.0.1:${gateway_port}/authelia/")" = "200"
+    fi \
     && test "$(curl -ksS -o /dev/null -w '%{http_code}' "https://127.0.0.1:${gateway_port}/")" = "302" \
     && test "$(curl -ksS -o /dev/null -w '%{http_code}' -H 'Connection: Upgrade' -H 'Upgrade: websocket' "https://127.0.0.1:${gateway_port}/websockify")" = "302"
 }

@@ -1,15 +1,16 @@
 # KDE in Web Browser
 
 Personal browser-accessible Linux desktop built around KDE Wayland, Docker,
-Selkies/Webtop, an Authelia-protected HTTPS gateway, host-user integration, and
-optional WeChat/QQ and frpc modules.
+Selkies/Webtop, a PAM-authenticated HTTPS gateway, optional Authelia fallback,
+host-user integration, and optional WeChat/QQ and frpc modules.
 
 ## Current Contents
 
 - `compose/webtop-kde.yml`: reusable LinuxServer Webtop KDE Compose template.
 - `custom-cont-init.d/`: Selkies/KDE init extensions for clipboard, locale,
   theme, and HiDPI.
-- `gateway/nginx/`: HTTPS reverse proxy and Authelia `auth_request` template.
+- `gateway/nginx/`: HTTPS reverse proxy and `auth_request` template.
+- `gateway/pam-auth/`: host-side PAM auth helper used by the default gateway.
 - `modules/wechat-qq/`: WeChat/QQ image layer and launcher assets.
 - `modules/frpc/`: sanitized frpc examples.
 - `Doc/`: public project documentation.
@@ -31,13 +32,12 @@ For a fast non-interactive local template:
 
 ```bash
 scripts/install.sh --preset balanced
-AUTHELIA_BOOTSTRAP_PASSWORD='change-this' scripts/ensure-authelia-config.sh
 docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml up -d
 ```
 
 Open the gateway URL from `.env`, normally `https://127.0.0.1:18080`. The
-gateway authenticates through Authelia. The raw Webtop ports are not published
-by default.
+gateway authenticates through the host PAM helper by default. The raw Webtop
+ports are not published by default.
 
 The host-published gateway port maps to `gateway-nginx:8443`; container-local
 HTTP on `8080` is not published. When frpc is enabled, expose
