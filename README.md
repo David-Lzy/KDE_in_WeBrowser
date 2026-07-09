@@ -16,6 +16,19 @@ optional WeChat/QQ and frpc modules.
 
 ## Quick Start
 
+Recommended interactive setup:
+
+```bash
+scripts/configure-deployment.sh
+```
+
+The wizard starts by asking for Chinese or English prompts. Press Enter on
+ordinary questions to accept the recommended value. Sensitive required values,
+such as an frpc token or an Authelia bootstrap password, require an explicit
+value or the literal `skip`.
+
+For a fast non-interactive local template:
+
 ```bash
 scripts/install.sh --preset balanced
 AUTHELIA_BOOTSTRAP_PASSWORD='change-this' scripts/ensure-authelia-config.sh

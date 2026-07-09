@@ -9,7 +9,7 @@ Public user and contributor documentation for KDE in Web Browser.
 - `theme-sync.md`: Selkies dark/light, DPI, and locale synchronization into KDE.
 - `wechat-qq.md`: WeChat/QQ module build and data mapping.
 - `frpc.md`: optional frpc exposure for the authenticated gateway.
-- `install.md`: install script and local deployment files.
+- `install.md`: interactive deployment wizard, install script, and local files.
 - `validation.md`: automated release gate and manual browser checklist.
 - `../gateway/README.md`: Authelia-protected HTTPS gateway notes.
 - `../compose/README.md`: how to use the Compose templates.

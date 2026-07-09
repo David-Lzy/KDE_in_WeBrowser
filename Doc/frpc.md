@@ -10,6 +10,17 @@ $EDITOR modules/frpc/frpc.toml
 docker compose --env-file .env -f compose/webtop-kde.yml --profile frpc up -d
 ```
 
+The interactive deployment wizard can generate the private frpc file instead:
+
+```bash
+scripts/configure-deployment.sh
+```
+
+When frpc is enabled, the wizard asks for the frps address and token. Enter is
+not accepted for those fields; type a value or the literal `skip`. If a custom
+frpc config path is selected, the wizard writes `FRPC_CONFIG_FILE` into `.env`
+so the Compose template mounts that exact file.
+
 Only expose the authenticated gateway:
 
 ```text

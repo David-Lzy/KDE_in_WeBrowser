@@ -116,6 +116,29 @@ install_smoke_check() {
   return "${status}"
 }
 
+wizard_smoke_check() {
+  local tmp_dir
+  tmp_dir="$(mktemp -d)"
+  local status=0
+
+  scripts/configure-deployment.sh \
+    --language en \
+    --defaults \
+    --force \
+    --no-actions \
+    --env-file "${tmp_dir}/.env" \
+    --compose-file "${tmp_dir}/compose.local.yml" \
+    --frpc-file "${tmp_dir}/frpc.toml" >/tmp/kde-in-webbrowser-wizard-smoke.log \
+    && test -s "${tmp_dir}/.env" \
+    && test -s "${tmp_dir}/compose.local.yml" \
+    && rg -q '^FRPC_CONFIG_FILE=' "${tmp_dir}/.env" \
+    && docker compose --env-file "${tmp_dir}/.env" -f compose/webtop-kde.yml -f "${tmp_dir}/compose.local.yml" config --quiet \
+    || status=$?
+
+  rm -rf "${tmp_dir}"
+  return "${status}"
+}
+
 public_path_check() {
   local bad
   bad="$(
@@ -137,7 +160,7 @@ secret_scan_check() {
     [[ -f "${file}" ]] || continue
     file_matches="$(
       rg -n --pcre2 \
-        'li3\.141592li|BEGIN [A-Z ]*PRIVATE KEY|token\s*=\s*"(?!REPLACE_ME)"|serverAddr\s*=\s*"(?!FRPS_PUBLIC_HOST_OR_IP)"|45\.77\.|170\.64\.|100\.64\.0\.1|10\.10\.2\.210' \
+        'li3\.141592li|BEGIN [A-Z ]*PRIVATE KEY|^[[:space:]]*token\s*=\s*"(?!REPLACE_ME|\$\{frpc_token\})|^[[:space:]]*serverAddr\s*=\s*"(?!FRPS_PUBLIC_HOST_OR_IP|\$\{frpc_server_addr\})|45\.77\.|170\.64\.|100\.64\.0\.1|10\.10\.2\.210' \
         "${file}" \
         || true
     )"
@@ -225,6 +248,7 @@ run_check "compose templates" compose_check
 run_check "bandwidth preset compose" preset_compose_check
 run_check "nginx gateway config" nginx_check
 run_check "installer smoke" install_smoke_check
+run_check "deployment wizard smoke" wizard_smoke_check
 run_check "public path allowlist" public_path_check
 run_check "secret scan" secret_scan_check
 run_check "authelia config" authelia_config_check

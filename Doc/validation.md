@@ -7,8 +7,9 @@ scripts/validate.sh
 ```
 
 The script checks shell, Python, Compose rendering, bandwidth presets, NGINX
-gateway config, installer smoke behavior, Authelia config when present, and
-public-safe path and secret scans. It does not start or stop the desktop.
+gateway config, installer and deployment-wizard smoke behavior, Authelia config
+when present, and public-safe path and secret scans. It does not start or stop
+the desktop.
 
 To include checks against an already running local deployment:
 

@@ -7,6 +7,12 @@ This directory contains reusable Docker Compose templates for the project.
 Generate local deployment files and start the stack:
 
 ```bash
+scripts/configure-deployment.sh
+```
+
+For a minimal scripted setup:
+
+```bash
 scripts/install.sh --preset balanced
 AUTHELIA_BOOTSTRAP_PASSWORD='change-this' scripts/ensure-authelia-config.sh
 docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml up -d
@@ -99,4 +105,5 @@ Gateway and Authelia controls:
 
 frpc is disabled by default. To enable it, copy
 `modules/frpc/frpc.example.toml` to `modules/frpc/frpc.toml`, fill in secrets
-locally, then run with `--profile frpc`.
+locally, then run with `--profile frpc`. The deployment wizard can also write
+this file and sets `FRPC_CONFIG_FILE` in `.env` when a custom path is selected.
