@@ -67,6 +67,11 @@ Terminal-related controls:
 - `HOST_SSH_TARGET`
 - `HOST_SSH_KEY`
 
+Host/user identity controls:
+
+- `CONTAINER_USER`
+- `CONTAINER_HOSTNAME`
+
 Theme sync controls:
 
 - `ENABLE_THEME_SYNC`

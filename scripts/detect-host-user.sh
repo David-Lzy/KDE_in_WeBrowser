@@ -20,6 +20,15 @@ host_uid="$(printf '%s\n' "${passwd_entry}" | awk -F: '{print $3}')"
 host_gid="$(printf '%s\n' "${passwd_entry}" | awk -F: '{print $4}')"
 host_home="$(printf '%s\n' "${passwd_entry}" | awk -F: '{print $6}')"
 container_user="docker_${host_user}"
+host_machine="$(hostname -s 2>/dev/null || hostname 2>/dev/null || printf 'host')"
+host_machine="${host_machine%%.*}"
+host_machine="$(printf '%s' "${host_machine}" | tr -c '[:alnum:]_.-' '_')"
+host_machine="${host_machine##_}"
+host_machine="${host_machine%%_}"
+if [[ -z "${host_machine}" ]]; then
+  host_machine="host"
+fi
+container_hostname="docker_${host_machine}"
 
 tz="Etc/UTC"
 if command -v timedatectl >/dev/null 2>&1; then
@@ -163,6 +172,7 @@ HOST_UID=${host_uid}
 HOST_GID=${host_gid}
 HOST_HOME=${data_root}/home/${host_user}
 CONTAINER_USER=${container_user}
+CONTAINER_HOSTNAME=${container_hostname}
 
 TZ=${tz}
 WEBTOP_LANG=${locale_value}

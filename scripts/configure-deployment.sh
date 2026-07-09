@@ -458,7 +458,7 @@ write_env_file() {
   write_env_section "Compose project" \
     COMPOSE_PROJECT_NAME CONTAINER_NAME
   write_env_section "Host user and project-local desktop home" \
-    HOST_USER HOST_UID HOST_GID HOST_HOME CONTAINER_USER
+    HOST_USER HOST_UID HOST_GID HOST_HOME CONTAINER_USER CONTAINER_HOSTNAME
   write_env_section "Container session" \
     TZ WEBTOP_LANG WEBTOP_LANGUAGE WEBTOP_LC_ALL TITLE
   write_env_section "Display and GPU" \
@@ -575,6 +575,7 @@ env[COMPOSE_PROJECT_NAME]="$(prompt_default "Compose 项目名" "Compose project
 env[CONTAINER_NAME]="$(prompt_default "Webtop 容器名" "Webtop container name" "${env[CONTAINER_NAME]}")"
 env[HOST_HOME]="$(prompt_default "容器 /config 对应的宿主目录" "Host directory mounted as /config" "${env[HOST_HOME]}")"
 env[CONTAINER_USER]="$(prompt_default "容器显示用户名" "Container display username" "${env[CONTAINER_USER]}")"
+env[CONTAINER_HOSTNAME]="$(prompt_default "容器机器名/hostname" "Container hostname" "${env[CONTAINER_HOSTNAME]}")"
 env[TITLE]="$(prompt_default "浏览器窗口标题" "Browser window title" "${env[TITLE]}")"
 env[TZ]="$(prompt_default "时区" "Timezone" "${env[TZ]}")"
 env[WEBTOP_LANG]="$(prompt_default "KDE LANG" "KDE LANG" "${env[WEBTOP_LANG]}")"

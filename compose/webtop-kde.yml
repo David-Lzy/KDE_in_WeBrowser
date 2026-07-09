@@ -10,6 +10,7 @@ services:
         INSTALL_QQ: "${INSTALL_QQ:-true}"
         INSTALL_PCMANFM: "${INSTALL_PCMANFM:-true}"
     container_name: "${CONTAINER_NAME:-kde-webtop}"
+    hostname: "${CONTAINER_HOSTNAME:-docker_host}"
     expose:
       - "3000"
       - "3001"
@@ -35,6 +36,7 @@ services:
       HOST_GID: "${HOST_GID:-1000}"
       HOST_HOME: "${HOST_HOME:-/home/davidli}"
       CONTAINER_USER: "${CONTAINER_USER:-docker_davidli}"
+      CONTAINER_HOSTNAME: "${CONTAINER_HOSTNAME:-docker_host}"
       TZ: "${TZ:-Australia/Adelaide}"
       LANG: "${WEBTOP_LANG:-zh_CN.UTF-8}"
       LANGUAGE: "${WEBTOP_LANGUAGE:-zh_CN}"

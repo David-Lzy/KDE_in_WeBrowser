@@ -18,11 +18,17 @@ Important fields:
 - `HOST_HOME`: project-local host path mounted as `/config`.
 - `CONTAINER_USER`: compatibility account added inside the container, normally
   `docker_${HOST_USER}`.
+- `CONTAINER_HOSTNAME`: Docker hostname shown by shells and terminal titles,
+  normally `docker_<host-machine-name>`.
 
 LinuxServer Webtop still keeps its internal `abc` account. The project adds
 `CONTAINER_USER` as the preferred passwd/group entry for the same UID/GID and
 `/config` home, so UID lookups display `docker_${HOST_USER}` while
 LinuxServer services that call `s6-setuidgid abc` keep working.
+
+The Compose template also sets Docker `hostname` from `CONTAINER_HOSTNAME`, so
+terminal prompts show `docker_${HOST_USER}@docker_<host-machine-name>` instead
+of the random container ID.
 
 ## Warning
 
