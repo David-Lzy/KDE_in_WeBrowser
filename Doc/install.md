@@ -22,6 +22,21 @@ The wizard:
   install the host PAM auth helper, generate Authelia config, set up the host
   SSH key, validate Compose, and start the stack.
 
+Fully unattended local setup with recommended defaults:
+
+```bash
+scripts/configure-deployment.sh --language en --defaults --force --start
+```
+
+This path is intended for a fresh clone on a host that already has Docker and
+the Docker Compose plugin. It will generate `.env`, ensure local TLS, install
+the host PAM auth helper, start the Compose stack, and then configure the
+container-to-host SSH key after the Webtop container is running.
+
+Unattended setup still needs either root or passwordless sudo for the host PAM
+helper. Sensitive values are not guessed: frpc stays disabled unless you rerun
+the wizard with the token or edit `.env` and `modules/frpc/frpc.toml`.
+
 Useful wizard options:
 
 - `--language zh|en`

@@ -101,6 +101,16 @@ The wizard asks for Chinese or English prompts first. Press Enter to use the
 recommended value. For sensitive required values such as frpc token or Authelia
 bootstrap password, enter a value or type `skip` explicitly.
 
+Unattended local setup with recommended defaults:
+
+```bash
+scripts/configure-deployment.sh --language en --defaults --force --start
+```
+
+This still requires Docker, Docker Compose, and root/passwordless sudo for the
+host PAM helper. Secrets such as frpc tokens are intentionally skipped unless
+you provide them interactively or edit `.env` and `modules/frpc/frpc.toml`.
+
 Fast local setup:
 
 ```bash

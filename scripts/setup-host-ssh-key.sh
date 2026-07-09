@@ -33,6 +33,18 @@ if ! docker inspect "${container_name}" >/dev/null 2>&1; then
   exit 1
 fi
 
+for _ in $(seq 1 60); do
+  if [[ "$(docker inspect -f '{{.State.Running}}' "${container_name}" 2>/dev/null || true)" == "true" ]]; then
+    break
+  fi
+  sleep 1
+done
+
+if [[ "$(docker inspect -f '{{.State.Running}}' "${container_name}" 2>/dev/null || true)" != "true" ]]; then
+  echo "container is not running: ${container_name}" >&2
+  exit 1
+fi
+
 passwd_entry="$(getent passwd "${host_user}" || true)"
 if [[ -z "${passwd_entry}" ]]; then
   echo "host user not found: ${host_user}" >&2

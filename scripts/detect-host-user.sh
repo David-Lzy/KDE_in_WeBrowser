@@ -261,5 +261,3 @@ AUTHELIA_USER=${host_user}
 AUTHELIA_DISPLAY_NAME=KDE Web Desktop
 AUTHELIA_EMAIL=${host_user}@localhost
 EOF
-
-echo "run scripts/ensure-authelia-config.sh before starting the gateway" >&2

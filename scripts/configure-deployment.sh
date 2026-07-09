@@ -530,15 +530,6 @@ run_post_actions() {
     scripts/install-pam-auth-helper.sh --env-file "${env_file}" --pam-service "${env[PAM_AUTH_SERVICE]}"
   fi
 
-  if [[ "${setup_host_ssh_key}" == "true" ]]; then
-    if [[ "${env_file}" != ".env" ]]; then
-      say "Host SSH key 生成仅在输出文件为 .env 时自动执行；当前已跳过。" \
-          "Host SSH key setup only runs automatically when the output file is .env; skipped."
-    else
-      scripts/setup-host-ssh-key.sh
-    fi
-  fi
-
   local compose_cmd=(docker compose --env-file "${env_file}" -f compose/webtop-kde.yml)
   if [[ -f "${compose_local_file}" ]]; then
     compose_cmd+=(-f "${compose_local_file}")
@@ -550,6 +541,18 @@ run_post_actions() {
 
   if [[ "${start_stack}" == "true" ]]; then
     "${compose_cmd[@]}" up -d
+  fi
+
+  if [[ "${setup_host_ssh_key}" == "true" ]]; then
+    if [[ "${env_file}" != ".env" ]]; then
+      say "Host SSH key 生成仅在输出文件为 .env 时自动执行；当前已跳过。" \
+          "Host SSH key setup only runs automatically when the output file is .env; skipped."
+    elif [[ "${start_stack}" != "true" ]]; then
+      say "Host SSH key 生成需要容器已启动；请启动后运行 scripts/setup-host-ssh-key.sh。" \
+          "Host SSH key setup needs the container to be running; run scripts/setup-host-ssh-key.sh after starting."
+    else
+      scripts/setup-host-ssh-key.sh
+    fi
   fi
 
   say "Compose 命令：" "Compose command:"
