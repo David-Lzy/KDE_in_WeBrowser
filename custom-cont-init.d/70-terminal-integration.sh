@@ -34,17 +34,33 @@ if [[ -z "${target}" ]]; then
 fi
 
 port="${HOST_SSH_PORT:-22}"
+key="${HOST_SSH_KEY:-/config/.ssh/kde-webtop-host-ed25519}"
 remote_cmd='cd "$HOME" || exit; export KDE_WEBTOP_CONTEXT=HOST; exec bash -i'
 
 printf '\033]0;HOST SSH %s\007' "${target}"
 printf '\033[1;33mHOST SSH terminal -> %s:%s\033[0m\n' "${target}" "${port}"
-exec ssh -tt \
-  -p "${port}" \
-  -o ServerAliveInterval=30 \
-  -o ServerAliveCountMax=3 \
-  -o StrictHostKeyChecking=accept-new \
-  "${target}" \
-  "${remote_cmd}"
+ssh_args=(
+  -tt
+  -p "${port}"
+  -o ServerAliveInterval=30
+  -o ServerAliveCountMax=3
+  -o StrictHostKeyChecking=accept-new
+)
+
+if [[ -f "${key}" ]]; then
+  ssh_args+=(
+    -i "${key}"
+    -o IdentitiesOnly=yes
+    -o PreferredAuthentications=publickey
+    -o PasswordAuthentication=no
+  )
+else
+  printf '\033[1;31mSSH key missing: %s\033[0m\n' "${key}" >&2
+  printf 'Run scripts/setup-host-ssh-key.sh on the Docker host, then reopen this terminal.\n' >&2
+  exit 1
+fi
+
+exec ssh "${ssh_args[@]}" "${target}" "${remote_cmd}"
 HOSTTERM
 
 cat >/usr/local/bin/kde-docker-terminal <<'DOCKERTERM'
@@ -135,4 +151,5 @@ else
 fi
 
 echo "[terminal-integration] Host terminal target: ${host_ssh_target}:${host_ssh_port}"
+echo "[terminal-integration] Host SSH key: ${HOST_SSH_KEY:-/config/.ssh/kde-webtop-host-ed25519}"
 echo "[terminal-integration] Docker terminal user: ${container_user:-abc}"

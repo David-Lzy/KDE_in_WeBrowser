@@ -75,6 +75,7 @@ services:
       HOST_SSH_HOST: "${HOST_SSH_HOST:-host.docker.internal}"
       HOST_SSH_PORT: "${HOST_SSH_PORT:-22}"
       HOST_SSH_TARGET: "${HOST_SSH_TARGET:-}"
+      HOST_SSH_KEY: "${HOST_SSH_KEY:-/config/.ssh/kde-webtop-host-ed25519}"
       ENABLE_THEME_SYNC: "${ENABLE_THEME_SYNC:-true}"
       THEME_SYNC_LIGHT_SCHEME: "${THEME_SYNC_LIGHT_SCHEME:-BreezeLight}"
       THEME_SYNC_DARK_SCHEME: "${THEME_SYNC_DARK_SCHEME:-BreezeDark}"

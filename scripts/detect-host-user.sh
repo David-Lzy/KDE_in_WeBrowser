@@ -208,6 +208,7 @@ ENABLE_TERMINAL_INTEGRATION=true
 HOST_SSH_HOST=host.docker.internal
 HOST_SSH_PORT=${ssh_port}
 HOST_SSH_TARGET=
+HOST_SSH_KEY=/config/.ssh/kde-webtop-host-ed25519
 
 ENABLE_THEME_SYNC=true
 THEME_SYNC_LIGHT_SCHEME=BreezeLight

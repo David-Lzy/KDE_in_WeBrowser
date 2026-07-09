@@ -24,10 +24,23 @@ On Linux Docker, Compose maps `host.docker.internal` to the Docker host through
   unset.
 - `HOST_SSH_TARGET`: optional full SSH target. If empty, the container uses
   `${HOST_USER}@${HOST_SSH_HOST}`.
+- `HOST_SSH_KEY`: SSH private key path inside the container. Default:
+  `/config/.ssh/kde-webtop-host-ed25519`.
 
 Because `${HOST_HOME}` is a project-local `/config`, SSH client keys and known
 hosts are stored inside the project-local desktop home. The host terminal still
 connects back to the real host account over SSH.
+
+Run this once on the Docker host to enable passwordless Host SSH Terminal
+logins:
+
+```bash
+scripts/setup-host-ssh-key.sh
+```
+
+The script generates the key under `/config/.ssh`, appends the public key to the
+selected host user's `~/.ssh/authorized_keys`, preloads `known_hosts`, and tests
+public-key login with password authentication disabled.
 
 ## Visual Difference
 

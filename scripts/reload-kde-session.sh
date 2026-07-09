@@ -29,6 +29,7 @@ if [[ -f "${env_file}" ]]; then
     HOST_UID \
     HOST_GID \
     CONTAINER_USER \
+    HOST_SSH_KEY \
     WEBTOP_LANG \
     WEBTOP_LANGUAGE \
     WEBTOP_LC_ALL \
