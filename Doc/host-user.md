@@ -22,8 +22,9 @@ Important fields:
   normally `docker_<host-machine-name>`.
 
 LinuxServer Webtop still keeps its internal `abc` account. The project adds
-`CONTAINER_USER` as the preferred passwd/group entry for the same UID/GID and
-`/config` home, so UID lookups display `docker_${HOST_USER}` while
+`CONTAINER_USER` as the preferred passwd/group/shadow entry for the same
+UID/GID and `/config` home, mirrors `abc` supplementary groups, and adds a
+matching sudoers entry. UID lookups display `docker_${HOST_USER}` while
 LinuxServer services that call `s6-setuidgid abc` keep working.
 
 The Compose template also sets Docker `hostname` from `CONTAINER_HOSTNAME`, so

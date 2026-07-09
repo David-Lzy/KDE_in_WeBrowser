@@ -235,6 +235,38 @@ live_stack_check() {
     && test "$(curl -ksS -o /dev/null -w '%{http_code}' -H 'Connection: Upgrade' -H 'Upgrade: websocket' "https://127.0.0.1:${gateway_port}/websockify")" = "302"
 }
 
+host_user_compat_live_check() {
+  if [[ "${VALIDATE_LIVE:-0}" != "1" ]]; then
+    skip "host-user compatibility" "set VALIDATE_LIVE=1 to require running-container checks"
+    return 0
+  fi
+  if [[ ! -f .env ]]; then
+    printf 'VALIDATE_LIVE=1 requires .env\n' >&2
+    return 1
+  fi
+
+  local container_user
+  container_user="$(awk -F= '$1 == "CONTAINER_USER" { print $2 }' .env | tail -n 1)"
+  container_user="${container_user%\"}"
+  container_user="${container_user#\"}"
+  if [[ -z "${container_user}" ]]; then
+    skip "host-user compatibility" "CONTAINER_USER is unset"
+    return 0
+  fi
+
+  docker exec kde-webtop sh -lc '
+    set -eu
+    container_user="$1"
+    getent passwd "${container_user}" >/dev/null
+    if [ "${container_user}" != "abc" ]; then
+      getent shadow "${container_user}" >/dev/null
+    fi
+    s6-setuidgid abc sudo -n true
+    pgrep -f kwin_wayland >/dev/null
+    pgrep -x plasmashell >/dev/null
+  ' sh "${container_user}"
+}
+
 if ! need_command git; then
   fail "git is required"
 fi
@@ -265,6 +297,7 @@ run_check "public path allowlist" public_path_check
 run_check "secret scan" secret_scan_check
 run_check "authelia config" authelia_config_check
 run_check "live stack checks" live_stack_check
+run_check "host-user compatibility" host_user_compat_live_check
 
 printf 'summary - failed=%s skipped=%s\n' "${failed}" "${skipped}"
 if [[ "${failed}" -ne 0 ]]; then
