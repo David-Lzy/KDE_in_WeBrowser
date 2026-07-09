@@ -1,0 +1,203 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+failed=0
+skipped=0
+
+cd "${repo_root}"
+
+pass() {
+  printf 'ok - %s\n' "$1"
+}
+
+fail() {
+  printf 'not ok - %s\n' "$1" >&2
+  failed=$((failed + 1))
+}
+
+skip() {
+  printf 'skip - %s: %s\n' "$1" "$2"
+  skipped=$((skipped + 1))
+}
+
+run_check() {
+  local name="$1"
+  shift
+  printf 'check - %s\n' "${name}"
+  set +e
+  "$@"
+  local status=$?
+  set -e
+  if [[ "${status}" -eq 0 ]]; then
+    pass "${name}"
+  else
+    fail "${name}"
+  fi
+}
+
+need_command() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+shell_syntax_check() {
+  bash -n scripts/*.sh \
+    && bash -n custom-cont-init.d/*.sh \
+    && bash -n gateway/host/install-pam-helper.sh
+}
+
+python_check() {
+  python3 -m py_compile \
+    gateway/host/kde-webtop-pam-helper-server.py \
+    modules/wechat-qq/root/scripts/window_switcher.py \
+    && find gateway modules -type d -name __pycache__ -prune -exec rm -rf {} +
+}
+
+gateway_check() {
+  (cd gateway \
+    && npm run check \
+    && npm audit --omit=dev)
+}
+
+compose_check() {
+  docker compose --env-file .env.example -f compose/webtop-kde.yml config --quiet \
+    && docker compose --env-file .env.example -f compose/webtop-kde.yml -f compose/wechat-qq.override.yml config --quiet \
+    && docker compose --env-file .env.example -f compose/webtop-kde.yml --profile frpc config --quiet
+}
+
+preset_compose_check() {
+  local tmp_env
+  tmp_env="$(mktemp)"
+  local preset
+  for preset in low-bandwidth balanced quality; do
+    cat .env.example ".env.${preset}.example" > "${tmp_env}"
+    docker compose --env-file "${tmp_env}" -f compose/webtop-kde.yml config --quiet || {
+      rm -f "${tmp_env}"
+      return 1
+    }
+  done
+  rm -f "${tmp_env}"
+}
+
+nginx_check() {
+  docker run --rm \
+    --add-host gateway-app:127.0.0.1 \
+    --add-host webtop-kde:127.0.0.1 \
+    -v "${repo_root}/gateway/nginx/default.conf.template:/etc/nginx/conf.d/default.conf:ro" \
+    nginx:mainline-alpine nginx -t
+}
+
+install_smoke_check() {
+  if [[ -e .env || -e compose.local.yml ]]; then
+    skip "install smoke" ".env or compose.local.yml already exists"
+    return 0
+  fi
+
+  local tmp_mount
+  tmp_mount="$(mktemp -d)"
+  local status=0
+
+  scripts/install.sh --force --preset low-bandwidth --mount "${tmp_mount}:/mnt/validate:ro" >/tmp/kde-in-webbrowser-install-smoke.log \
+    && test -s .env \
+    && test -s compose.local.yml \
+    && rg -q '^GATEWAY_COOKIE_SECRET=[0-9a-f]{64}$' .env \
+    && rg -q '^BETTER_AUTH_SECRET=[0-9a-f]{64}$' .env \
+    && docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml config --quiet \
+    || status=$?
+
+  rm -rf "${tmp_mount}"
+  rm -f .env compose.local.yml
+  return "${status}"
+}
+
+public_path_check() {
+  local bad
+  bad="$(
+    git ls-files -co --exclude-standard \
+      | rg -n '(^|/)(\.env|\.agent|\.local|_incoming|config|\.xwechat|xwechat_files|Tencent Files|WeChat Files|node_modules|backups)(/|$)|(^|/)frpc\.toml$|\.(key|pem|crt|p12|pfx)$' \
+      || true
+  )"
+  if [[ -n "${bad}" ]]; then
+    printf '%s\n' "${bad}" >&2
+    return 1
+  fi
+}
+
+secret_scan_check() {
+  local file
+  local file_matches
+  local matches=""
+  while IFS= read -r -d '' file; do
+    file_matches="$(
+      rg -n --pcre2 \
+        'li3\.141592li|BEGIN [A-Z ]*PRIVATE KEY|token\s*=\s*"(?!REPLACE_ME)"|serverAddr\s*=\s*"(?!FRPS_PUBLIC_HOST_OR_IP)"|45\.77\.|170\.64\.|100\.64\.0\.1|10\.10\.2\.210' \
+        "${file}" \
+        || true
+    )"
+    if [[ -n "${file_matches}" ]]; then
+      matches+="${file_matches}"$'\n'
+    fi
+  done < <(git ls-files -co --exclude-standard -z)
+  if [[ -n "${matches}" ]]; then
+    printf '%s\n' "${matches}" >&2
+    return 1
+  fi
+}
+
+live_stack_check() {
+  if [[ "${VALIDATE_LIVE:-0}" != "1" ]]; then
+    skip "live stack" "set VALIDATE_LIVE=1 to require running-container checks"
+    return 0
+  fi
+  if [[ ! -f .env || ! -f compose.local.yml ]]; then
+    printf 'VALIDATE_LIVE=1 requires .env and compose.local.yml\n' >&2
+    return 1
+  fi
+
+  local gateway_port
+  gateway_port="$(awk -F= '$1 == "GATEWAY_PORT" { print $2 }' .env | tail -n 1)"
+  gateway_port="${gateway_port:-18080}"
+
+  docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml ps \
+    && curl -fsS "http://127.0.0.1:${gateway_port}/healthz" >/dev/null \
+    && test "$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${gateway_port}/")" = "302" \
+    && test "$(curl -sS -o /dev/null -w '%{http_code}' -H 'Connection: Upgrade' -H 'Upgrade: websocket' "http://127.0.0.1:${gateway_port}/websockify")" = "302"
+}
+
+if ! need_command git; then
+  fail "git is required"
+fi
+if ! need_command rg; then
+  fail "ripgrep is required"
+fi
+if ! need_command docker; then
+  fail "docker is required"
+fi
+if ! docker compose version >/dev/null 2>&1; then
+  fail "docker compose plugin is required"
+fi
+if ! need_command python3; then
+  fail "python3 is required"
+fi
+if ! need_command npm; then
+  fail "npm is required"
+fi
+if [[ "${failed}" -ne 0 ]]; then
+  exit 1
+fi
+
+run_check "shell syntax" shell_syntax_check
+run_check "python syntax" python_check
+run_check "gateway node and audit" gateway_check
+run_check "compose templates" compose_check
+run_check "bandwidth preset compose" preset_compose_check
+run_check "nginx gateway config" nginx_check
+run_check "installer smoke" install_smoke_check
+run_check "public path allowlist" public_path_check
+run_check "secret scan" secret_scan_check
+run_check "live stack checks" live_stack_check
+
+printf 'summary - failed=%s skipped=%s\n' "${failed}" "${skipped}"
+if [[ "${failed}" -ne 0 ]]; then
+  exit 1
+fi

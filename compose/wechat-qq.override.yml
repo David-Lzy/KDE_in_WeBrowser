@@ -1,0 +1,19 @@
+---
+services:
+  webtop-kde:
+    image: kde-webtop:wechat-qq
+    build:
+      context: ..
+      dockerfile: modules/wechat-qq/Dockerfile
+      args:
+        INSTALL_WECHAT: "${INSTALL_WECHAT:-true}"
+        INSTALL_QQ: "${INSTALL_QQ:-true}"
+        INSTALL_PCMANFM: "${INSTALL_PCMANFM:-true}"
+    environment:
+      ENABLE_WECHAT_QQ_MODULE: "true"
+      AUTO_START_WECHAT: "${AUTO_START_WECHAT:-false}"
+      AUTO_START_QQ: "${AUTO_START_QQ:-false}"
+    volumes:
+      - "${WECHAT_PROFILE_DIR:-${HOST_HOME}/.xwechat}:/config/.xwechat"
+      - "${WECHAT_FILES_DIR:-${HOST_HOME}/xwechat_files}:/config/xwechat_files"
+      - "${QQ_DATA_DIR:-${HOST_HOME}/Tencent Files}:/config/Tencent Files"

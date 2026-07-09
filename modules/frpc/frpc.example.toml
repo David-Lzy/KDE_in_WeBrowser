@@ -1,0 +1,23 @@
+serverAddr = "FRPS_PUBLIC_HOST_OR_IP"
+serverPort = 10202
+
+[auth]
+method = "token"
+token = "REPLACE_ME"
+
+[webServer]
+addr = "127.0.0.1"
+port = 7400
+
+[transport]
+tcpMux = true
+tcpMuxKeepaliveInterval = 60
+dialServerKeepalive = 120
+poolCount = 16
+
+[[proxies]]
+name = "kde-webtop-gateway"
+type = "tcp"
+localIP = "gateway-nginx"
+localPort = 8080
+remotePort = 18080

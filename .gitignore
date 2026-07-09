@@ -2,7 +2,9 @@
 .env
 .env.*
 !.env.example
+!.env.*.example
 compose.local.yml
+backups/
 
 # Runtime state and mounted homes
 config/
@@ -45,4 +47,5 @@ build/
 .next/
 .turbo/
 .cache/
-
+__pycache__/
+*.py[cod]

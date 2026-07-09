@@ -1,0 +1,33 @@
+# Architecture Notes
+
+The project is organized around a browser-accessible KDE desktop with optional
+application modules.
+
+## Base Desktop
+
+The current base desktop template uses LinuxServer Webtop:
+
+- image: `lscr.io/linuxserver/webtop:ubuntu-kde`
+- browser transport: Selkies on ports `3000` and `3001`
+- desktop mode: KDE Wayland with Xwayland support
+- GPU path: `/dev/dri` plus NVIDIA runtime on hosts that provide it
+
+The Compose template lives at `compose/webtop-kde.yml`.
+
+## Init Extensions
+
+Custom init scripts are mounted into `/custom-cont-init.d`:
+
+- `50-xwayland-clipboard-bridge.sh` keeps text clipboard content synchronized
+  between native Wayland applications and Xwayland applications.
+- `60-auto-hidpi-dpi.sh` injects client-side DPI selection so Selkies can map
+  browser device pixel ratio to a matching stream DPI.
+
+## Optional Modules
+
+`modules/wechat-qq/` stores reusable launcher scripts and defaults for an
+optional WeChat/QQ desktop module.
+
+`modules/frpc/` stores sanitized frpc examples for publishing selected desktop
+ports through a remote frps server. Real frpc tokens and server details are
+local deployment data and are intentionally excluded from Git.
