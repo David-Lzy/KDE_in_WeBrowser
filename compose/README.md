@@ -17,6 +17,18 @@ scripts/install.sh --preset balanced
 docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml up -d
 ```
 
+Baota/BT Panel should use the generated pair:
+
+```bash
+scripts/render-baota-compose.sh
+docker compose --env-file data/baota/.env -f data/baota/docker-compose.yml up -d
+```
+
+The Baota Compose file keeps `${...}` placeholders and the generated
+`data/baota/.env` contains the concrete values. Routine configuration should be
+changed in `.env` or `data/baota/.env`; Compose overrides are only needed for
+structural changes such as arbitrary extra bind mounts.
+
 The template publishes only the TLS listener of `gateway-nginx`, normally on
 `https://127.0.0.1:18080`. LinuxServer Webtop KDE stays inside the Docker
 network on ports `3000` and `3001`. NGINX protects Webtop with `auth_request`

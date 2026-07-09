@@ -72,6 +72,26 @@ preset_compose_check() {
   rm -f "${tmp_env}"
 }
 
+baota_render_check() {
+  local tmp_dir
+  tmp_dir="$(mktemp -d)"
+  local status=0
+
+  ENV_FILE=".env.example" \
+    BAOTA_COMPOSE_FILE="${tmp_dir}/docker-compose.yml" \
+    BAOTA_ENV_FILE="${tmp_dir}/.env" \
+    BAOTA_COMPOSE_PROFILES="frpc" \
+    scripts/render-baota-compose.sh >/tmp/kde-in-webbrowser-baota-render.log \
+    && docker compose --env-file "${tmp_dir}/.env" -f "${tmp_dir}/docker-compose.yml" config --quiet \
+    && rg -q '^REPO_DIR=' "${tmp_dir}/.env" \
+    && rg -q '\$\{HOST_HOME' "${tmp_dir}/docker-compose.yml" \
+    && rg -q '^  frpc:' "${tmp_dir}/docker-compose.yml" \
+    || status=$?
+
+  rm -rf "${tmp_dir}"
+  return "${status}"
+}
+
 nginx_check() {
   local tmp_certs
   tmp_certs="$(mktemp -d)"
@@ -290,6 +310,7 @@ run_check "shell syntax" shell_syntax_check
 run_check "python syntax" python_check
 run_check "compose templates" compose_check
 run_check "bandwidth preset compose" preset_compose_check
+run_check "baota compose render" baota_render_check
 run_check "nginx gateway config" nginx_check
 run_check "installer smoke" install_smoke_check
 run_check "deployment wizard smoke" wizard_smoke_check

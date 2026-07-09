@@ -100,6 +100,17 @@ Start the stack:
 docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml up -d
 ```
 
+For Baota/BT Panel, render the panel-facing files after `.env` is ready:
+
+```bash
+scripts/render-baota-compose.sh
+docker compose --env-file data/baota/.env -f data/baota/docker-compose.yml up -d
+```
+
+In Baota, use `data/baota/docker-compose.yml` as the Compose file and
+`data/baota/.env` as the env file. The env file owns the editable deployment
+settings; the Compose file keeps `${...}` placeholders.
+
 Open the gateway URL from `.env`, normally:
 
 ```text

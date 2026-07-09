@@ -1,7 +1,7 @@
 ---
 services:
   webtop-kde:
-    image: kde-webtop:wechat-qq
+    image: "${WEBTOP_IMAGE:-kde-webtop:wechat-qq}"
     build:
       context: ..
       dockerfile: modules/wechat-qq/Dockerfile
@@ -99,7 +99,7 @@ services:
       - "${AUTHELIA_CONFIG_DIR:-../data/authelia}:/config"
 
   gateway-nginx:
-    image: nginx:mainline-alpine
+    image: "${NGINX_IMAGE:-nginx:mainline-alpine}"
     restart: unless-stopped
     depends_on:
       - authelia
@@ -120,7 +120,7 @@ services:
       - "${PAM_AUTH_RUN_DIR:-../data/pam-auth/run}:/run/kde-pam-auth"
 
   frpc:
-    image: snowdreamtech/frpc:nightly
+    image: "${FRPC_IMAGE:-snowdreamtech/frpc:nightly}"
     profiles:
       - frpc
     restart: unless-stopped
