@@ -8,6 +8,9 @@ fi
 
 install -d -m 755 /config/Desktop /config/.local/share/applications /config/.config/autostart /config/log
 
+container_user="${CONTAINER_USER:-${HOST_USER:+docker_${HOST_USER}}}"
+container_user="${container_user:-abc}"
+
 chmod 755 /scripts /scripts/wechat /scripts/qq 2>/dev/null || true
 
 if [[ -d /wechat-xwechat-files ]]; then
@@ -55,8 +58,8 @@ launch_when_ready() {
     echo "[$(date -Is)] Starting ${name}"
     exec s6-setuidgid abc env \
       HOME=/config \
-      USER=abc \
-      LOGNAME=abc \
+      USER="${container_user}" \
+      LOGNAME="${container_user}" \
       DISPLAY=:1 \
       XDG_RUNTIME_DIR=/config/.XDG \
       WAYLAND_DISPLAY=wayland-0 \

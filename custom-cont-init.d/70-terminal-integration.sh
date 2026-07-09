@@ -53,6 +53,9 @@ set -euo pipefail
 
 cd /config
 export KDE_WEBTOP_CONTEXT=DOCKER
+container_user="${CONTAINER_USER:-$(id -un 2>/dev/null || echo docker)}"
+export USER="${container_user}"
+export LOGNAME="${container_user}"
 printf '\033]0;DOCKER local terminal\007'
 printf '\033[1;36mDOCKER local terminal -> %s\033[0m\n' "$(hostname)"
 exec bash -i

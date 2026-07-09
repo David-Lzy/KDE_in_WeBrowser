@@ -21,6 +21,7 @@ dark_look="${THEME_SYNC_DARK_LOOK_AND_FEEL:-org.kde.breezedark.desktop}"
 export HOME="${HOME:-/config}"
 export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-/config/.config}"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/config/.XDG}"
+export DISPLAY="${DISPLAY:-:1}"
 if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
   wayland_socket="$(find "${XDG_RUNTIME_DIR}" -maxdepth 1 -type s -name 'wayland-*' -printf '%f\n' 2>/dev/null | sort | head -n 1 || true)"
   if [[ -n "${wayland_socket}" ]]; then
@@ -28,6 +29,24 @@ if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
   fi
 fi
 export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-wayland}"
+
+run_desktop_command() {
+  if [[ "$(id -u)" == "0" ]] && command -v s6-setuidgid >/dev/null 2>&1; then
+    s6-setuidgid abc env \
+      HOME="${HOME}" \
+      XDG_CONFIG_HOME="${XDG_CONFIG_HOME}" \
+      XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR}" \
+      DISPLAY="${DISPLAY}" \
+      WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
+      QT_QPA_PLATFORM="${QT_QPA_PLATFORM}" \
+      LANG="${WEBTOP_LANG:-${LANG:-zh_CN.UTF-8}}" \
+      LANGUAGE="${WEBTOP_LANGUAGE:-${LANGUAGE:-zh_CN}}" \
+      LC_ALL="${WEBTOP_LC_ALL:-${LC_ALL:-${LANG:-zh_CN.UTF-8}}}" \
+      "$@"
+  else
+    "$@"
+  fi
+}
 
 apply_mode() {
   local target_mode="$1"
@@ -48,16 +67,16 @@ apply_mode() {
   esac
 
   if command -v plasma-apply-colorscheme >/dev/null 2>&1; then
-    plasma-apply-colorscheme "${scheme}" || true
+    run_desktop_command plasma-apply-colorscheme "${scheme}" || true
   fi
   if command -v plasma-apply-lookandfeel >/dev/null 2>&1; then
-    plasma-apply-lookandfeel -a "${look}" || true
+    run_desktop_command plasma-apply-lookandfeel -a "${look}" || true
   elif command -v lookandfeeltool >/dev/null 2>&1; then
-    lookandfeeltool -a "${look}" || true
+    run_desktop_command lookandfeeltool -a "${look}" || true
   fi
   if command -v kwriteconfig6 >/dev/null 2>&1; then
-    kwriteconfig6 --file kdeglobals --group General --key ColorScheme "${scheme}" || true
-    kwriteconfig6 --file kdeglobals --group KDE --key LookAndFeelPackage "${look}" || true
+    run_desktop_command kwriteconfig6 --file kdeglobals --group General --key ColorScheme "${scheme}" || true
+    run_desktop_command kwriteconfig6 --file kdeglobals --group KDE --key LookAndFeelPackage "${look}" || true
   fi
 
   mkdir -p /config/.local/state/kde-webtop

@@ -36,7 +36,28 @@ kde-webtop-theme-sync dark
 kde-webtop-theme-sync light
 kde-webtop-theme-sync toggle
 kde-webtop-theme-sync status
+kde-webtop-scale-sync 144
+kde-webtop-session-sync
+kde-webtop-session-sync --restart-plasma
 ```
+
+Host-side reload without recreating the Docker container:
+
+```bash
+scripts/reload-kde-session.sh
+scripts/reload-kde-session.sh --restart-plasma
+```
+
+The host-side script reads the current `.env` and passes the relevant language,
+theme, and container-user values into `docker exec`, so `.env` edits can be
+applied without recreating the container.
+
+Theme and DPI changes are hot-applied through Selkies command messages. Locale
+config and Selkies HTML language can also be rewritten live, but already
+running application processes keep the environment they started with. Use
+`--restart-plasma` after changing language if the Plasma shell itself must be
+refreshed without recreating the container. Recreating `webtop-kde` remains the
+cleanest way to guarantee every process inherits a new locale.
 
 ## Environment
 

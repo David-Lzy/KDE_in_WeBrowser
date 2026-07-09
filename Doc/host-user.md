@@ -19,10 +19,10 @@ Important fields:
 - `CONTAINER_USER`: compatibility account added inside the container, normally
   `docker_${HOST_USER}`.
 
-LinuxServer Webtop still keeps its internal `abc` account. The project adds a
-second passwd/group entry for `CONTAINER_USER` with the same UID/GID and
-`/config` home, so tools can resolve `docker_${HOST_USER}` without breaking
-LinuxServer services that call `s6-setuidgid abc`.
+LinuxServer Webtop still keeps its internal `abc` account. The project adds
+`CONTAINER_USER` as the preferred passwd/group entry for the same UID/GID and
+`/config` home, so UID lookups display `docker_${HOST_USER}` while
+LinuxServer services that call `s6-setuidgid abc` keep working.
 
 ## Warning
 
