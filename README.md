@@ -35,6 +35,17 @@ scripts/install.sh --preset balanced
 docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml up -d
 ```
 
+For Baota/BT Panel, render a single expanded Compose file first:
+
+```bash
+scripts/render-baota-compose.sh
+docker compose -f data/baota/docker-compose.yml up -d
+```
+
+Use `data/baota/docker-compose.yml` as the Compose file in Baota. The rendered
+file expands enabled profile services such as `frpc`, because Baota does not
+pass profile flags when it opens or restarts a project.
+
 Open the gateway URL from `.env`, normally `https://127.0.0.1:18080`. The
 gateway authenticates through the host PAM helper by default. The raw Webtop
 ports are not published by default.
