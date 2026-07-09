@@ -1,5 +1,0 @@
----
-# Deprecated compatibility override. The WeChat/QQ image layer is now part of
-# compose/webtop-kde.yml and is controlled through .env.
-services:
-  webtop-kde: {}

@@ -7,7 +7,6 @@ Included assets:
 
 - `root/scripts/start.sh`
 - `root/scripts/refresh-menu.sh`
-- `root/scripts/window_switcher.py`
 - `root/scripts/wechat/`
 - `root/scripts/qq/`
 - `root/defaults/`

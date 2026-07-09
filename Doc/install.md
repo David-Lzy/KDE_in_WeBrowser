@@ -129,7 +129,6 @@ Useful options:
 - `--preset balanced`
 - `--preset quality`
 - `--mount /host/path:/container/path[:ro]`
-- `--with-wechat-qq`
 - `--with-frpc`
 - `--start`
 

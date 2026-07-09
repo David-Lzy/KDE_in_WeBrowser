@@ -6,7 +6,6 @@ host_user="${USER:-}"
 preset="balanced"
 force="false"
 start_stack="false"
-with_wechat_qq="false"
 with_frpc="false"
 skip_pam_helper="false"
 mounts=()
@@ -19,7 +18,6 @@ Options:
   --user USER              Host user to map into /config.
   --preset NAME            low-bandwidth, balanced, or quality. Default: balanced.
   --mount SPEC             Add a local compose bind mount, host:container[:mode].
-  --with-wechat-qq         Print the compose command with the WeChat/QQ override.
   --with-frpc              Print the compose command with --profile frpc.
   --skip-pam-helper        Do not install the host PAM auth helper.
   --start                  Run docker compose up -d after generating files.
@@ -41,10 +39,6 @@ while [[ $# -gt 0 ]]; do
     --mount)
       mounts+=("${2:?missing mount spec}")
       shift 2
-      ;;
-    --with-wechat-qq)
-      with_wechat_qq="true"
-      shift
       ;;
     --with-frpc)
       with_frpc="true"
@@ -178,9 +172,6 @@ fi
 compose_cmd=(docker compose --env-file .env -f compose/webtop-kde.yml)
 if [[ -f compose.local.yml ]]; then
   compose_cmd+=(-f compose.local.yml)
-fi
-if [[ "${with_wechat_qq}" == "true" ]]; then
-  compose_cmd+=(-f compose/wechat-qq.override.yml)
 fi
 if [[ "${with_frpc}" == "true" ]]; then
   compose_cmd+=(--profile frpc)

@@ -61,7 +61,6 @@ RUN apt-get update && \
       libxrender1 \
       libxss1 \
       libxtst6 \
-      python3-xlib \
       shared-mime-info \
       stalonetray \
       xdg-utils && \
@@ -89,7 +88,7 @@ RUN ln -sf /opt/wechat/wechat /usr/bin/wechat && \
 COPY modules/wechat-qq/root/ /
 
 RUN chmod 755 /scripts /scripts/wechat /scripts/qq \
-      /scripts/start.sh /scripts/refresh-menu.sh /scripts/window_switcher.py \
+      /scripts/start.sh /scripts/refresh-menu.sh \
       /scripts/wechat/*.sh /scripts/qq/*.sh && \
     gtk-update-icon-cache -f /usr/share/icons/hicolor || true && \
     update-desktop-database /usr/share/applications || true && \

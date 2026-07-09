@@ -48,13 +48,11 @@ shell_syntax_check() {
 python_check() {
   python3 -m py_compile \
     gateway/pam-auth/pam-auth-helper.py \
-    modules/wechat-qq/root/scripts/window_switcher.py \
     && find gateway modules -type d -name __pycache__ -prune -exec rm -rf {} +
 }
 
 compose_check() {
   docker compose --env-file .env.example -f compose/webtop-kde.yml config --quiet \
-    && docker compose --env-file .env.example -f compose/webtop-kde.yml -f compose/wechat-qq.override.yml config --quiet \
     && docker compose --env-file .env.example -f compose/webtop-kde.yml --profile frpc config --quiet
 }
 

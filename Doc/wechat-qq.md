@@ -46,11 +46,59 @@ data/qq/Tencent Files
 Do not commit these paths. They may contain account data, chat data, and file
 transfers.
 
-For migration from an existing `wechat-selkies` deployment, stop the webtop
-container, move the old data into the ignored project-local `data/` directory,
-then point `.env` at the new absolute paths:
+## Why Persistent Mapping Matters
+
+WeChat desktop history is local-client state. If you sign in from several
+desktop installations, each installation can have its own profile path and file
+store. That is why a chat or imported file may appear on one desktop client and
+not on another.
+
+This project avoids that pattern by keeping one persistent Linux desktop-side
+WeChat profile and letting every device connect to it through the browser. It
+does not magically merge unrelated histories. It gives you one stable desktop
+profile to keep using.
+
+## Migrating Chat Files
+
+For migration from an existing `wechat-selkies` deployment or another Linux
+desktop, stop the webtop container first:
+
+```bash
+docker compose --env-file .env -f compose/webtop-kde.yml down
+```
+
+Then move or copy the old data into the ignored project-local `data/`
+directory, and point `.env` at those paths:
 
 ```env
 WECHAT_PROFILE_DIR=/path/to/KDE_in_WeBrowser/data/wechat/.xwechat
 WECHAT_FILES_DIR=/path/to/KDE_in_WeBrowser/data/wechat/xwechat_files
+```
+
+For local or LAN migration, `rsync` is preferred because it can preserve file
+metadata and resume large transfers:
+
+```bash
+rsync -aH --info=progress2 old-host:/old/wechat/.xwechat/ \
+  /path/to/KDE_in_WeBrowser/data/wechat/.xwechat/
+
+rsync -aH --info=progress2 old-host:/old/wechat/xwechat_files/ \
+  /path/to/KDE_in_WeBrowser/data/wechat/xwechat_files/
+```
+
+For a simpler one-shot copy, `scp` is fine:
+
+```bash
+scp -r old-host:/old/wechat/.xwechat \
+  /path/to/KDE_in_WeBrowser/data/wechat/
+
+scp -r old-host:/old/wechat/xwechat_files \
+  /path/to/KDE_in_WeBrowser/data/wechat/
+```
+
+Back up the destination before overwriting an existing profile. After copying,
+start the stack again:
+
+```bash
+docker compose --env-file .env -f compose/webtop-kde.yml up -d
 ```

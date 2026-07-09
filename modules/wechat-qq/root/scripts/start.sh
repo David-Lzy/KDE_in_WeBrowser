@@ -49,7 +49,3 @@ fi
 if [ "$AUTO_START_QQ" = "true" ]; then
     if [ -f /usr/bin/qq ]; then nohup /usr/bin/qq --no-sandbox > /dev/null 2>&1 & fi
 fi
-
-# !deprecated: start window switcher application in the background
-# start window switcher application in the background
-# nohup sleep 2 && python /scripts/window_switcher.py > /dev/null 2>&1 &

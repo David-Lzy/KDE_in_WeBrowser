@@ -14,6 +14,3 @@ Public user and contributor documentation for KDE in Web Browser.
 - `../gateway/README.md`: PAM-authenticated HTTPS gateway notes.
 - `../gateway/pam-auth/README.md`: host-side PAM helper notes.
 - `../compose/README.md`: how to use the Compose templates.
-
-Current private planning and implementation TODOs are kept under `.local/Doc/`
-on the development machine and are not committed.
