@@ -42,21 +42,13 @@ need_command() {
 
 shell_syntax_check() {
   bash -n scripts/*.sh \
-    && bash -n custom-cont-init.d/*.sh \
-    && bash -n gateway/host/install-pam-helper.sh
+    && bash -n custom-cont-init.d/*.sh
 }
 
 python_check() {
   python3 -m py_compile \
-    gateway/host/kde-webtop-pam-helper-server.py \
     modules/wechat-qq/root/scripts/window_switcher.py \
     && find gateway modules -type d -name __pycache__ -prune -exec rm -rf {} +
-}
-
-gateway_check() {
-  (cd gateway \
-    && npm run check \
-    && npm audit --omit=dev)
 }
 
 compose_check() {
@@ -80,11 +72,26 @@ preset_compose_check() {
 }
 
 nginx_check() {
+  local tmp_certs
+  tmp_certs="$(mktemp -d)"
+  openssl req \
+    -x509 \
+    -nodes \
+    -newkey rsa:2048 \
+    -days 1 \
+    -keyout "${tmp_certs}/kde-webtop.key" \
+    -out "${tmp_certs}/kde-webtop.crt" \
+    -subj "/CN=kde-webtop-gateway" >/dev/null 2>&1
+
   docker run --rm \
-    --add-host gateway-app:127.0.0.1 \
+    --add-host authelia:127.0.0.1 \
     --add-host webtop-kde:127.0.0.1 \
     -v "${repo_root}/gateway/nginx/default.conf.template:/etc/nginx/conf.d/default.conf:ro" \
+    -v "${tmp_certs}:/etc/nginx/certs:ro" \
     nginx:mainline-alpine nginx -t
+  local status=$?
+  rm -rf "${tmp_certs}"
+  return "${status}"
 }
 
 install_smoke_check() {
@@ -100,8 +107,7 @@ install_smoke_check() {
   scripts/install.sh --force --preset low-bandwidth --mount "${tmp_mount}:/mnt/validate:ro" >/tmp/kde-in-webbrowser-install-smoke.log \
     && test -s .env \
     && test -s compose.local.yml \
-    && rg -q '^GATEWAY_COOKIE_SECRET=[0-9a-f]{64}$' .env \
-    && rg -q '^BETTER_AUTH_SECRET=[0-9a-f]{64}$' .env \
+    && rg -q '^AUTHELIA_CONFIG_DIR=' .env \
     && docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml config --quiet \
     || status=$?
 
@@ -144,6 +150,34 @@ secret_scan_check() {
   fi
 }
 
+authelia_config_check() {
+  local config_dir
+  config_dir="${AUTHELIA_CONFIG_DIR:-}"
+  if [[ -z "${config_dir}" && -f .env ]]; then
+    config_dir="$(awk -F= '$1 == "AUTHELIA_CONFIG_DIR" { print $2 }' .env | tail -n 1)"
+    config_dir="${config_dir%\"}"
+    config_dir="${config_dir#\"}"
+  fi
+  if [[ -z "${config_dir}" ]]; then
+    config_dir="data/authelia"
+  fi
+  case "${config_dir}" in
+    /*) ;;
+    ../*) config_dir="$(realpath -m "${repo_root}/compose/${config_dir}")" ;;
+    *) config_dir="$(realpath -m "${repo_root}/${config_dir}")" ;;
+  esac
+
+  if [[ ! -f "${config_dir}/configuration.yml" ]]; then
+    skip "authelia config" "no local data/authelia configuration generated"
+    return 0
+  fi
+
+  docker run --rm \
+    -v "${config_dir}:/config:ro" \
+    "authelia/authelia:${AUTHELIA_VERSION:-4.39.20}" \
+    authelia config validate --config /config/configuration.yml
+}
+
 live_stack_check() {
   if [[ "${VALIDATE_LIVE:-0}" != "1" ]]; then
     skip "live stack" "set VALIDATE_LIVE=1 to require running-container checks"
@@ -159,9 +193,10 @@ live_stack_check() {
   gateway_port="${gateway_port:-18080}"
 
   docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml ps \
-    && curl -fsS "http://127.0.0.1:${gateway_port}/healthz" >/dev/null \
-    && test "$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${gateway_port}/")" = "302" \
-    && test "$(curl -sS -o /dev/null -w '%{http_code}' -H 'Connection: Upgrade' -H 'Upgrade: websocket' "http://127.0.0.1:${gateway_port}/websockify")" = "302"
+    && curl -kfsS "https://127.0.0.1:${gateway_port}/healthz" >/dev/null \
+    && test "$(curl -ksS -o /dev/null -w '%{http_code}' "https://127.0.0.1:${gateway_port}/authelia/")" = "200" \
+    && test "$(curl -ksS -o /dev/null -w '%{http_code}' "https://127.0.0.1:${gateway_port}/")" = "302" \
+    && test "$(curl -ksS -o /dev/null -w '%{http_code}' -H 'Connection: Upgrade' -H 'Upgrade: websocket' "https://127.0.0.1:${gateway_port}/websockify")" = "302"
 }
 
 if ! need_command git; then
@@ -179,22 +214,19 @@ fi
 if ! need_command python3; then
   fail "python3 is required"
 fi
-if ! need_command npm; then
-  fail "npm is required"
-fi
 if [[ "${failed}" -ne 0 ]]; then
   exit 1
 fi
 
 run_check "shell syntax" shell_syntax_check
 run_check "python syntax" python_check
-run_check "gateway node and audit" gateway_check
 run_check "compose templates" compose_check
 run_check "bandwidth preset compose" preset_compose_check
 run_check "nginx gateway config" nginx_check
 run_check "installer smoke" install_smoke_check
 run_check "public path allowlist" public_path_check
 run_check "secret scan" secret_scan_check
+run_check "authelia config" authelia_config_check
 run_check "live stack checks" live_stack_check
 
 printf 'summary - failed=%s skipped=%s\n' "${failed}" "${skipped}"

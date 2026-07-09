@@ -6,9 +6,9 @@ Run this before publishing a change:
 scripts/validate.sh
 ```
 
-The script checks shell, Python, gateway Node syntax, npm audit, Compose
-rendering, bandwidth presets, NGINX gateway config, installer smoke behavior,
-and public-safe path and secret scans. It does not start or stop the desktop.
+The script checks shell, Python, Compose rendering, bandwidth presets, NGINX
+gateway config, installer smoke behavior, Authelia config when present, and
+public-safe path and secret scans. It does not start or stop the desktop.
 
 To include checks against an already running local deployment:
 
@@ -17,19 +17,19 @@ VALIDATE_LIVE=1 scripts/validate.sh
 ```
 
 `VALIDATE_LIVE=1` requires `.env` and `compose.local.yml`. It checks the Compose
-state, gateway health endpoint, and that unauthenticated HTTP and WebSocket
-requests are redirected to login.
+state, HTTPS gateway health endpoint, and that unauthenticated HTTPS and
+WebSocket requests are redirected to login.
 
 ## Manual Browser Checklist
 
-Use the gateway URL from `.env`, usually `http://127.0.0.1:18080`.
+Use the gateway URL from `.env`, usually `https://127.0.0.1:18080`.
 
 | Scenario | Expected result |
 | --- | --- |
-| Gateway login success | Correct host username/password enters the desktop. |
+| Gateway login success | Correct Authelia username/password enters the desktop. |
 | Gateway wrong password | Login returns an invalid credentials error. |
-| Repeated wrong password cooldown | After the configured failure count, login returns cooldown. |
-| Unauthenticated Webtop HTTP blocked | Opening `/` without a session redirects to `/auth/login`. |
+| Repeated wrong password lockout | After the configured failure count, Authelia temporarily blocks retries. |
+| Unauthenticated Webtop HTTPS blocked | Opening `/` without a session redirects to `/authelia/`. |
 | Unauthenticated WebSocket blocked | A direct WebSocket upgrade without a session redirects or fails auth. |
 | KDE starts | KDE Plasma desktop reaches an interactive state. |
 | Wayland/Xwayland available | Native KDE apps and Xwayland apps can both launch. |
@@ -41,7 +41,7 @@ Use the gateway URL from `.env`, usually `http://127.0.0.1:18080`.
 | Host terminal opens host shell | Host SSH profile opens the configured host shell. |
 | Docker terminal opens container shell | Docker profile opens a shell inside the webtop container. |
 | WeChat/QQ optional module launches when enabled | Desktop shortcuts launch enabled apps and data maps to `/config`. |
-| frpc optional module exposes only gateway when enabled | frpc points at `gateway-nginx:8080`, not raw Webtop ports. |
+| frpc optional module exposes only gateway when enabled | frpc points at `gateway-nginx:8443`, not raw Webtop ports. |
 
 ## Release Gate
 

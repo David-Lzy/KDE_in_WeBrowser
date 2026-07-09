@@ -1,7 +1,14 @@
 ---
 services:
   webtop-kde:
-    image: lscr.io/linuxserver/webtop:ubuntu-kde
+    image: kde-webtop:wechat-qq
+    build:
+      context: ..
+      dockerfile: modules/wechat-qq/Dockerfile
+      args:
+        INSTALL_WECHAT: "${INSTALL_WECHAT:-true}"
+        INSTALL_QQ: "${INSTALL_QQ:-true}"
+        INSTALL_PCMANFM: "${INSTALL_PCMANFM:-true}"
     container_name: "${CONTAINER_NAME:-kde-webtop}"
     expose:
       - "3000"
@@ -10,6 +17,9 @@ services:
     volumes:
       - "${HOST_HOME:?set HOST_HOME or run scripts/detect-host-user.sh}:/config"
       - "../custom-cont-init.d:/custom-cont-init.d:ro"
+      - "${WECHAT_PROFILE_DIR:-../data/wechat/.xwechat}:/config/.xwechat"
+      - "${WECHAT_FILES_DIR:-../data/wechat/xwechat_files}:/wechat-xwechat-files"
+      - "${QQ_DATA_DIR:-../data/qq/Tencent Files}:/config/Tencent Files"
     devices:
       - "${DRI_DEVICE:-/dev/dri}:/dev/dri"
     extra_hosts:
@@ -57,6 +67,9 @@ services:
       ENABLE_XWAYLAND_CLIPBOARD_BRIDGE: "${ENABLE_XWAYLAND_CLIPBOARD_BRIDGE:-true}"
       ENABLE_AUTO_HIDPI_DPI: "${ENABLE_AUTO_HIDPI_DPI:-true}"
       ENABLE_TERMINAL_INTEGRATION: "${ENABLE_TERMINAL_INTEGRATION:-true}"
+      ENABLE_WECHAT_QQ_MODULE: "${ENABLE_WECHAT_QQ_MODULE:-true}"
+      AUTO_START_WECHAT: "${AUTO_START_WECHAT:-false}"
+      AUTO_START_QQ: "${AUTO_START_QQ:-false}"
       HOST_SSH_HOST: "${HOST_SSH_HOST:-host.docker.internal}"
       HOST_SSH_PORT: "${HOST_SSH_PORT:-22}"
       HOST_SSH_TARGET: "${HOST_SSH_TARGET:-}"
@@ -66,38 +79,35 @@ services:
       THEME_SYNC_LIGHT_LOOK_AND_FEEL: "${THEME_SYNC_LIGHT_LOOK_AND_FEEL:-org.kde.breeze.desktop}"
       THEME_SYNC_DARK_LOOK_AND_FEEL: "${THEME_SYNC_DARK_LOOK_AND_FEEL:-org.kde.breezedark.desktop}"
 
-  gateway-app:
-    build:
-      context: ../gateway
+  authelia:
+    image: "authelia/authelia:${AUTHELIA_VERSION:-4.39.20}"
     restart: unless-stopped
-    depends_on:
-      - webtop-kde
+    expose:
+      - "9091"
+    command:
+      - authelia
+      - --config
+      - /config/configuration.yml
     environment:
-      NODE_ENV: production
-      HOST_USER: "${HOST_USER:-davidli}"
-      GATEWAY_APP_PORT: "3000"
-      GATEWAY_PORT: "${GATEWAY_PORT:-18080}"
-      GATEWAY_PUBLIC_BASE_URL: "${GATEWAY_PUBLIC_BASE_URL:-http://127.0.0.1:18080}"
-      GATEWAY_COOKIE_SECRET: "${GATEWAY_COOKIE_SECRET:?set GATEWAY_COOKIE_SECRET}"
-      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}"
-      GATEWAY_SESSION_MAX_AGE_SECONDS: "${GATEWAY_SESSION_MAX_AGE_SECONDS:-28800}"
-      GATEWAY_COOLDOWN_WINDOW_SECONDS: "${GATEWAY_COOLDOWN_WINDOW_SECONDS:-300}"
-      GATEWAY_COOLDOWN_MAX_FAILURES: "${GATEWAY_COOLDOWN_MAX_FAILURES:-5}"
-      GATEWAY_COOLDOWN_LOCK_SECONDS: "${GATEWAY_COOLDOWN_LOCK_SECONDS:-300}"
-      PAM_HELPER_SOCKET: "${PAM_HELPER_SOCKET:-/run/kde-webtop-pam/helper.sock}"
+      TZ: "${TZ:-Australia/Adelaide}"
     volumes:
-      - "/run/kde-webtop-pam:/run/kde-webtop-pam"
+      - "${AUTHELIA_CONFIG_DIR:-../data/authelia}:/config"
 
   gateway-nginx:
     image: nginx:mainline-alpine
     restart: unless-stopped
     depends_on:
-      - gateway-app
+      - authelia
       - webtop-kde
+    expose:
+      - "8080"
+      - "8443"
     ports:
-      - "${GATEWAY_BIND:-127.0.0.1}:${GATEWAY_PORT:-18080}:8080"
+      - "${GATEWAY_BIND:-127.0.0.1}:${GATEWAY_PORT:-18080}:8443"
     volumes:
       - "../gateway/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro"
+      - "${GATEWAY_TLS_CERT:-../ssl/kde-webtop.crt}:/etc/nginx/certs/kde-webtop.crt:ro"
+      - "${GATEWAY_TLS_KEY:-../ssl/kde-webtop.key}:/etc/nginx/certs/kde-webtop.key:ro"
 
   frpc:
     image: snowdreamtech/frpc:nightly

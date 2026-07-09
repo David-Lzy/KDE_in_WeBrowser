@@ -47,5 +47,6 @@ build/
 .next/
 .turbo/
 .cache/
+.playwright-cli/
 __pycache__/
 *.py[cod]

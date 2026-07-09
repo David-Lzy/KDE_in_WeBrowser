@@ -6,6 +6,12 @@ Generate local deployment files:
 scripts/install.sh --preset balanced
 ```
 
+Generate the private Authelia config before the first start:
+
+```bash
+AUTHELIA_BOOTSTRAP_PASSWORD='change-this' scripts/ensure-authelia-config.sh
+```
+
 The installer writes:
 
 - `.env`
@@ -24,11 +30,11 @@ docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml up
 Open the gateway URL from `.env`, normally:
 
 ```text
-http://127.0.0.1:18080
+https://127.0.0.1:18080
 ```
 
-The gateway uses the selected host username and password through the host-side
-PAM helper. Raw Webtop ports are not published by default.
+The gateway uses Authelia for browser authentication. Raw Webtop ports are not
+published by default.
 
 Useful options:
 

@@ -15,8 +15,9 @@ The current base desktop template uses LinuxServer Webtop:
 The Compose template lives at `compose/webtop-kde.yml`.
 
 The browser entrypoint is `gateway-nginx`, which is published on the host and
-uses `auth_request` against `gateway-app`. Raw Webtop ports are not published by
-default.
+uses `auth_request` against Authelia. Raw Webtop ports are not published by
+default. The same NGINX container also provides a TLS listener on `8443` for
+host and frpc HTTPS exposure.
 
 ## Init Extensions
 
@@ -29,8 +30,8 @@ Custom init scripts are mounted into `/custom-cont-init.d`:
 
 ## Optional Modules
 
-`modules/wechat-qq/` stores reusable launcher scripts and defaults for an
-optional WeChat/QQ desktop module.
+`modules/wechat-qq/` stores the image layer, launcher scripts, and defaults for
+the WeChat/QQ desktop module.
 
 `modules/frpc/` stores sanitized frpc examples for publishing the authenticated
 gateway through a remote frps server. Real frpc tokens and server details are

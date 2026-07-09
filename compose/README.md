@@ -8,17 +8,20 @@ Generate local deployment files and start the stack:
 
 ```bash
 scripts/install.sh --preset balanced
+AUTHELIA_BOOTSTRAP_PASSWORD='change-this' scripts/ensure-authelia-config.sh
 docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml up -d
 ```
 
-The template publishes only `gateway-nginx`, normally on
-`127.0.0.1:18080`. LinuxServer Webtop KDE stays inside the Docker network on
-ports `3000` and `3001`, and NGINX proxies authenticated traffic to it.
+The template publishes only the TLS listener of `gateway-nginx`, normally on
+`https://127.0.0.1:18080`. LinuxServer Webtop KDE stays inside the Docker
+network on ports `3000` and `3001`. NGINX protects Webtop with Authelia via
+`auth_request` and then proxies authenticated traffic to it. NGINX keeps
+container-local HTTP on `8080`, but that port is not published to the host.
 
-Runtime state is written to `${HOST_HOME}` by default because that path is
-mounted as `/config`. This is personal-home mode: KDE config, desktop files,
-downloads, and application state can be created in the selected host user's
-home directory.
+Runtime state is written to `${HOST_HOME}` because that path is mounted as
+`/config`. The installer sets it to a project-local directory under
+`data/home/<user>` so KDE config, desktop files, downloads, and application
+state stay inside this project tree.
 
 LinuxServer containers warn when mounted custom init files are writable by the
 non-root checkout user. Before a production deployment, make a root-owned copy
@@ -66,7 +69,7 @@ Theme sync controls:
 - `THEME_SYNC_DARK_LOOK_AND_FEEL`
 - `SELKIES_COMMAND_ENABLED`
 
-Optional WeChat/QQ module controls, used with `compose/wechat-qq.override.yml`:
+WeChat/QQ module controls:
 
 - `ENABLE_WECHAT_QQ_MODULE`
 - `INSTALL_WECHAT`
@@ -78,18 +81,20 @@ Optional WeChat/QQ module controls, used with `compose/wechat-qq.override.yml`:
 - `WECHAT_FILES_DIR`
 - `QQ_DATA_DIR`
 
-Gateway-related controls:
+Gateway and Authelia controls:
 
 - `GATEWAY_BIND`
 - `GATEWAY_PORT`
 - `GATEWAY_PUBLIC_BASE_URL`
-- `GATEWAY_COOKIE_SECRET`
-- `BETTER_AUTH_SECRET`
-- `GATEWAY_SESSION_MAX_AGE_SECONDS`
-- `GATEWAY_COOLDOWN_WINDOW_SECONDS`
-- `GATEWAY_COOLDOWN_MAX_FAILURES`
-- `GATEWAY_COOLDOWN_LOCK_SECONDS`
-- `PAM_HELPER_SOCKET`
+- `GATEWAY_TLS_CERT`
+- `GATEWAY_TLS_KEY`
+- `GATEWAY_TLS_SANS`
+- `AUTHELIA_VERSION`
+- `AUTHELIA_CONFIG_DIR`
+- `AUTHELIA_PUBLIC_BASE_URLS`
+- `AUTHELIA_USER`
+- `AUTHELIA_DISPLAY_NAME`
+- `AUTHELIA_EMAIL`
 
 frpc is disabled by default. To enable it, copy
 `modules/frpc/frpc.example.toml` to `modules/frpc/frpc.toml`, fill in secrets

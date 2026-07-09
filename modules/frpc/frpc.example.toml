@@ -19,5 +19,5 @@ poolCount = 16
 name = "kde-webtop-gateway"
 type = "tcp"
 localIP = "gateway-nginx"
-localPort = 8080
-remotePort = 18080
+localPort = 8443
+remotePort = 18003

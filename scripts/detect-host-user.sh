@@ -2,6 +2,8 @@
 set -euo pipefail
 
 host_user="${1:-${SUDO_USER:-${USER:-}}}"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+data_root="${KDE_WEBTOP_DATA_ROOT:-${repo_root}/data}"
 
 if [[ -z "${host_user}" ]]; then
   echo "usage: $0 [host-user]" >&2
@@ -69,7 +71,7 @@ CONTAINER_NAME=kde-webtop
 HOST_USER=${host_user}
 HOST_UID=${host_uid}
 HOST_GID=${host_gid}
-HOST_HOME=${host_home}
+HOST_HOME=${data_root}/home/${host_user}
 CONTAINER_USER=${container_user}
 
 TZ=${tz}
@@ -121,26 +123,28 @@ THEME_SYNC_DARK_SCHEME=BreezeDark
 THEME_SYNC_LIGHT_LOOK_AND_FEEL=org.kde.breeze.desktop
 THEME_SYNC_DARK_LOOK_AND_FEEL=org.kde.breezedark.desktop
 
-ENABLE_WECHAT_QQ_MODULE=false
+ENABLE_WECHAT_QQ_MODULE=true
 INSTALL_WECHAT=true
 INSTALL_QQ=true
 INSTALL_PCMANFM=true
 AUTO_START_WECHAT=false
 AUTO_START_QQ=false
-WECHAT_PROFILE_DIR=${host_home}/.xwechat
-WECHAT_FILES_DIR=${host_home}/xwechat_files
-QQ_DATA_DIR="${host_home}/Tencent Files"
+WECHAT_PROFILE_DIR=${data_root}/wechat/.xwechat
+WECHAT_FILES_DIR=${data_root}/wechat/xwechat_files
+QQ_DATA_DIR="${data_root}/qq/Tencent Files"
 
 GATEWAY_BIND=127.0.0.1
 GATEWAY_PORT=18080
-GATEWAY_PUBLIC_BASE_URL=http://127.0.0.1:18080
-GATEWAY_COOKIE_SECRET=change-me-generate-random-32-bytes
-BETTER_AUTH_SECRET=change-me-generate-random-32-bytes
-GATEWAY_SESSION_MAX_AGE_SECONDS=28800
-GATEWAY_COOLDOWN_WINDOW_SECONDS=300
-GATEWAY_COOLDOWN_MAX_FAILURES=5
-GATEWAY_COOLDOWN_LOCK_SECONDS=300
-PAM_HELPER_SOCKET=/run/kde-webtop-pam/helper.sock
+GATEWAY_PUBLIC_BASE_URL=https://127.0.0.1:18080
+GATEWAY_TLS_CERT=../ssl/kde-webtop.crt
+GATEWAY_TLS_KEY=../ssl/kde-webtop.key
+GATEWAY_TLS_SANS=IP:127.0.0.1,DNS:localhost
+AUTHELIA_VERSION=4.39.20
+AUTHELIA_CONFIG_DIR=${data_root}/authelia
+AUTHELIA_PUBLIC_BASE_URLS=https://127.0.0.1:18080
+AUTHELIA_USER=${host_user}
+AUTHELIA_DISPLAY_NAME=KDE Web Desktop
+AUTHELIA_EMAIL=${host_user}@localhost
 EOF
 
-echo "login through the gateway with the host account password" >&2
+echo "run scripts/ensure-authelia-config.sh before starting the gateway" >&2

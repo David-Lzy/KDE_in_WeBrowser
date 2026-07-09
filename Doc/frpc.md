@@ -14,10 +14,11 @@ Only expose the authenticated gateway:
 
 ```text
 localIP = "gateway-nginx"
-localPort = 8080
+localPort = 8443
 ```
 
-Do not expose raw Webtop ports `3000` or `3001` through frpc.
+Port `8443` is the gateway NGINX TLS listener. Do not expose raw Webtop ports
+`3000` or `3001` through frpc.
 
 `modules/frpc/frpc.toml` is ignored because it contains the real frps host,
 remote port, and token.

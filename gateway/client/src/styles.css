@@ -1,0 +1,102 @@
+:root {
+  color-scheme: dark light;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: #0f1115;
+  color: #f7f7f5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  gap: clamp(28px, 6vw, 88px);
+  align-items: center;
+  width: min(1120px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+
+.auth-copy {
+  max-width: 520px;
+}
+
+.auth-mark {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  margin-bottom: 28px;
+  background: #4f9a8b;
+  color: #08120f;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.auth-copy h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 6vw, 4.8rem);
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.auth-copy p {
+  margin: 24px 0 0;
+  color: #b9c2bd;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.auth-card {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #2a2f36;
+  background: #171a20;
+  box-shadow: none;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-form button[type="submit"] {
+  min-height: 44px;
+}
+
+.auth-footnote {
+  color: #9aa4aa;
+  font-size: 0.86rem;
+}
+
+@media (max-width: 760px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+    width: min(420px, calc(100vw - 28px));
+    padding: 32px 0;
+  }
+
+  .auth-copy {
+    max-width: none;
+  }
+
+  .auth-copy h1 {
+    font-size: 2.5rem;
+  }
+}

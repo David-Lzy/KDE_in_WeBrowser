@@ -12,8 +12,11 @@ Included assets:
 - `root/scripts/qq/`
 - `root/defaults/`
 
-These files are intended for an optional image layer that provides WeChat and
-QQ desktop launchers inside a Selkies/Webtop-style browser desktop.
+These files are used by the main image layer to provide WeChat and QQ desktop
+launchers inside a Selkies/Webtop-style browser desktop. The Dockerfile copies
+the installed WeChat/QQ application trees from
+`ghcr.io/nickrunning/wechat-selkies:latest` by default so the app versions stay
+close to the original prototype.
 
 Not included:
 
@@ -25,13 +28,13 @@ Not included:
 
 ## Enable
 
-Use the Compose override:
+Build and run the main Compose file:
 
 ```bash
 docker compose --env-file .env \
   -f compose/webtop-kde.yml \
-  -f compose/wechat-qq.override.yml \
   up -d --build
 ```
 
-The module remains disabled unless this override is included.
+Use `.env` to control `INSTALL_WECHAT`, `INSTALL_QQ`, `INSTALL_PCMANFM`,
+`AUTO_START_WECHAT`, and `AUTO_START_QQ`.

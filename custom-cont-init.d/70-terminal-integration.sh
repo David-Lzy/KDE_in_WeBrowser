@@ -34,7 +34,7 @@ if [[ -z "${target}" ]]; then
 fi
 
 port="${HOST_SSH_PORT:-22}"
-remote_cmd='cd "$HOME"; export KDE_WEBTOP_CONTEXT=HOST; export PS1="\[\e[1;33m\][HOST \u@\h \W]\$ \[\e[0m\]"; exec bash --noprofile --norc -i'
+remote_cmd='cd "$HOME" || exit; export KDE_WEBTOP_CONTEXT=HOST; exec bash -i'
 
 printf '\033]0;HOST SSH %s\007' "${target}"
 printf '\033[1;33mHOST SSH terminal -> %s:%s\033[0m\n' "${target}" "${port}"
@@ -53,10 +53,9 @@ set -euo pipefail
 
 cd /config
 export KDE_WEBTOP_CONTEXT=DOCKER
-export PS1='\[\e[1;36m\][DOCKER \u@\h \W]\$ \[\e[0m\]'
 printf '\033]0;DOCKER local terminal\007'
 printf '\033[1;36mDOCKER local terminal -> %s\033[0m\n' "$(hostname)"
-exec bash --noprofile --norc -i
+exec bash -i
 DOCKERTERM
 
 chmod 755 /usr/local/bin/kde-host-terminal /usr/local/bin/kde-docker-terminal

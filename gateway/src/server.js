@@ -24,7 +24,7 @@ const port = Number(process.env.GATEWAY_APP_PORT || 3000);
 const hostUser = requiredEnv("HOST_USER");
 const cookieSecret = requiredEnv("GATEWAY_COOKIE_SECRET");
 const betterAuthSecret = process.env.BETTER_AUTH_SECRET || cookieSecret;
-const publicBaseURL = process.env.GATEWAY_PUBLIC_BASE_URL || `http://127.0.0.1:${process.env.GATEWAY_PORT || 18080}`;
+const publicBaseURL = process.env.GATEWAY_PUBLIC_BASE_URL || `https://127.0.0.1:${process.env.GATEWAY_PORT || 18080}`;
 const pamSocket = process.env.PAM_HELPER_SOCKET || "/run/kde-webtop-pam/helper.sock";
 const sessionCookieName = process.env.GATEWAY_SESSION_COOKIE || "kde_webtop_session";
 const sessionMaxAgeSeconds = Number(process.env.GATEWAY_SESSION_MAX_AGE_SECONDS || 28800);
@@ -58,18 +58,29 @@ const auth = betterAuth({
 });
 
 const app = express();
+const distDir = path.join(__dirname, "..", "dist");
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+app.use("/auth-static", express.static(distDir, { index: false }));
 
 app.get("/healthz", (_req, res) => {
   res.json({ ok: true });
 });
 
 app.get("/auth/login", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "public", "login.html"));
+  const builtLogin = path.join(distDir, "login.html");
+  if (fs.existsSync(builtLogin)) {
+    return res.sendFile(builtLogin);
+  }
+  return res.sendFile(path.join(__dirname, "..", "public", "login.html"));
+});
+
+app.get("/auth/config.js", (_req, res) => {
+  res.type("application/javascript");
+  res.send(`window.__KDE_WEBTOP_AUTH__ = ${JSON.stringify({ hostUser })};`);
 });
 
 app.post("/auth/login", async (req, res) => {
@@ -226,7 +237,7 @@ function setSessionCookie(res, user) {
   res.cookie(sessionCookieName, `${encoded}.${sig}`, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.GATEWAY_SECURE_COOKIES === "true",
+    secure: process.env.GATEWAY_SECURE_COOKIES !== "false",
     maxAge: sessionMaxAgeSeconds * 1000,
     path: "/",
   });

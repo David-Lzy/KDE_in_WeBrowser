@@ -1,0 +1,13 @@
+[Unit]
+Description=Restrict KDE Webtop Docker gateway port to Tailscale
+Requires=docker.service
+After=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/kde-webtop-docker-firewall
+RemainAfterExit=yes
+
+[Install]
+WantedBy=docker.service

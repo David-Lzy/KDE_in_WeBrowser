@@ -1,42 +1,24 @@
-# PAM Auth Gateway
+# HTTPS Gateway
 
-The gateway is split into two Docker services:
+The active gateway is split into two Docker services:
 
-- `gateway-nginx`: public browser entrypoint using NGINX `auth_request`.
-- `gateway-app`: Node/Express app with Better Auth mounted at `/api/auth/*`,
-  login UI, session cookie validation, cooldown tracking, and a PAM helper
-  client.
+- `gateway-nginx`: public HTTPS browser entrypoint using NGINX `auth_request`.
+- `authelia`: authentication portal and authorization endpoint.
 
-The host PAM verifier runs outside Docker because PAM must execute on the host.
-
-## Host Helper
-
-Install the helper on the Docker host:
-
-```bash
-sudo gateway/host/install-pam-helper.sh
-```
-
-The installer compiles a small PAM checker and starts
-`kde-webtop-pam-helper.service`, which listens on:
-
-```text
-/run/kde-webtop-pam/helper.sock
-```
-
-The Docker gateway mounts `/run/kde-webtop-pam` and sends one JSON request per
-login attempt.
+The old Node/Better Auth PAM gateway is not part of the active Compose stack.
 
 ## Gateway Flow
 
 1. Browser requests `/`.
-2. NGINX calls `/auth_request`.
-3. `gateway-app` returns `204` for a valid session or `401` for no session.
-4. NGINX redirects unauthenticated users to `/auth/login`.
-5. Login POST verifies the selected host user's password through the host PAM
-   helper.
-6. Successful login sets an HTTP-only gateway session cookie.
+2. NGINX calls `/internal/authelia/authz`.
+3. Authelia returns an allow/deny decision.
+4. NGINX redirects unauthenticated users to `/authelia/`.
+5. Successful Authelia login sets the session cookie for the gateway host.
+6. NGINX proxies authenticated traffic to `webtop-kde:3000`.
 
-Better Auth is mounted for the auth service boundary and future plugin work.
-The PAM flow currently uses a minimal gateway session cookie so the NGINX
-`auth_request` path has a small, deterministic verifier.
+Authelia runtime config, users, local SQLite storage, and branding assets are
+generated under ignored `data/authelia/` by:
+
+```bash
+AUTHELIA_BOOTSTRAP_PASSWORD='change-this' scripts/ensure-authelia-config.sh
+```

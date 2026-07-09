@@ -25,13 +25,15 @@ On Linux Docker, Compose maps `host.docker.internal` to the Docker host through
 - `HOST_SSH_TARGET`: optional full SSH target. If empty, the container uses
   `${HOST_USER}@${HOST_SSH_HOST}`.
 
-Because `${HOST_HOME}` is mounted as `/config`, the SSH client can use the
-selected host user's existing `/config/.ssh` keys and known hosts.
+Because `${HOST_HOME}` is a project-local `/config`, SSH client keys and known
+hosts are stored inside the project-local desktop home. The host terminal still
+connects back to the real host account over SSH.
 
 ## Visual Difference
 
-The host terminal starts with a yellow `HOST SSH terminal` banner and uses a
-`[HOST user@host cwd]` prompt.
+The host terminal starts with a yellow `HOST SSH terminal` banner and then
+executes interactive `bash` on the host, so the host user's `.bashrc` and shell
+customizations such as oh-my-bash are loaded.
 
-The Docker terminal starts with a cyan `DOCKER local terminal` banner and uses a
-`[DOCKER user@container cwd]` prompt.
+The Docker terminal starts with a cyan `DOCKER local terminal` banner and then
+executes interactive `bash` inside the container.

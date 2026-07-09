@@ -1,3 +1,6 @@
+ARG WECHAT_QQ_SOURCE_IMAGE=ghcr.io/nickrunning/wechat-selkies:latest
+FROM ${WECHAT_QQ_SOURCE_IMAGE} AS wechat_qq_source
+
 FROM lscr.io/linuxserver/webtop:ubuntu-kde
 
 ARG TARGETPLATFORM
@@ -67,33 +70,30 @@ RUN apt-get update && \
     fi && \
     rm -rf /var/lib/apt/lists/*
 
-RUN if [ "${INSTALL_WECHAT}" = "true" ]; then \
-      case "${TARGETPLATFORM}" in \
-        "linux/amd64") WECHAT_URL="https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_x86_64.deb" ;; \
-        "linux/arm64") WECHAT_URL="https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_arm64.deb" ;; \
-        *) echo "Unsupported platform for WeChat: ${TARGETPLATFORM}" >&2; exit 1 ;; \
-      esac && \
-      curl -fsSL --retry 3 --retry-delay 10 --retry-all-errors -o /tmp/wechat.deb "${WECHAT_URL}" && \
-      (dpkg -i /tmp/wechat.deb || (apt-get update && apt-get install -f -y && dpkg -i /tmp/wechat.deb)) && \
-      rm -f /tmp/wechat.deb && \
-      rm -rf /var/lib/apt/lists/*; \
-    fi
+COPY --from=wechat_qq_source /opt/wechat /opt/wechat
+COPY --from=wechat_qq_source /opt/QQ /opt/QQ
+COPY --from=wechat_qq_source /usr/share/applications/wechat.desktop /usr/share/applications/wechat.desktop
+COPY --from=wechat_qq_source /usr/share/applications/qq.desktop /usr/share/applications/qq.desktop
+COPY --from=wechat_qq_source /usr/share/icons/hicolor/256x256/apps/wechat.png /usr/share/icons/hicolor/256x256/apps/wechat.png
+COPY --from=wechat_qq_source /usr/share/icons/hicolor/512x512/apps/qq.png /usr/share/icons/hicolor/512x512/apps/qq.png
 
-RUN if [ "${INSTALL_QQ}" = "true" ]; then \
-      case "${TARGETPLATFORM}" in \
-        "linux/amd64") QQ_URL="https://dldir1v6.qq.com/qqfile/qq/QQNT/Linux/QQ_3.2.27_260401_amd64_01.deb" ;; \
-        "linux/arm64") QQ_URL="https://dldir1v6.qq.com/qqfile/qq/QQNT/Linux/QQ_3.2.27_260401_arm64_01.deb" ;; \
-        *) echo "Unsupported platform for QQ: ${TARGETPLATFORM}" >&2; exit 1 ;; \
-      esac && \
-      curl -fsSL --retry 3 --retry-delay 10 --retry-all-errors -o /tmp/qq.deb "${QQ_URL}" && \
-      (dpkg -i /tmp/qq.deb || (apt-get update && apt-get install -f -y && dpkg -i /tmp/qq.deb)) && \
-      rm -f /tmp/qq.deb && \
-      rm -rf /var/lib/apt/lists/*; \
+RUN ln -sf /opt/wechat/wechat /usr/bin/wechat && \
+    ln -sf /opt/QQ/qq /usr/bin/qq && \
+    if [ "${INSTALL_WECHAT}" != "true" ]; then \
+      rm -rf /opt/wechat /usr/bin/wechat /usr/share/applications/wechat.desktop; \
+    fi && \
+    if [ "${INSTALL_QQ}" != "true" ]; then \
+      rm -rf /opt/QQ /usr/bin/qq /usr/share/applications/qq.desktop; \
     fi
 
 COPY modules/wechat-qq/root/ /
 
-RUN chmod 755 /scripts/start.sh /scripts/refresh-menu.sh /scripts/window_switcher.py \
+RUN chmod 755 /scripts /scripts/wechat /scripts/qq \
+      /scripts/start.sh /scripts/refresh-menu.sh /scripts/window_switcher.py \
       /scripts/wechat/*.sh /scripts/qq/*.sh && \
+    gtk-update-icon-cache -f /usr/share/icons/hicolor || true && \
+    update-desktop-database /usr/share/applications || true && \
+    ldd /opt/wechat/wechat 2>/dev/null | grep -q "not found" && exit 1 || true && \
+    ldd /opt/QQ/qq 2>/dev/null | grep -q "not found" && exit 1 || true && \
     apt-get clean && \
     rm -rf /tmp/* /var/tmp/* /config/.cache

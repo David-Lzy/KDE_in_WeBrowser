@@ -1,7 +1,7 @@
 # Host User Mode
 
-The default deployment mode maps one selected host user's home directory into
-the container as `/config`.
+The default deployment mode authenticates one selected host user, but maps a
+project-local desktop home into the container as `/config`.
 
 Generate a local `.env` file:
 
@@ -15,7 +15,7 @@ Important fields:
 - `HOST_USER`: selected host account.
 - `HOST_UID`: numeric UID used for LinuxServer `PUID`.
 - `HOST_GID`: numeric GID used for LinuxServer `PGID`.
-- `HOST_HOME`: host path mounted as `/config`.
+- `HOST_HOME`: project-local host path mounted as `/config`.
 - `CONTAINER_USER`: compatibility account added inside the container, normally
   `docker_${HOST_USER}`.
 
@@ -26,7 +26,6 @@ LinuxServer services that call `s6-setuidgid abc`.
 
 ## Warning
 
-Personal-home mode writes KDE and application state into `${HOST_HOME}`. Treat
-the browser desktop as another session for that host user. Use a dedicated host
-account if you do not want the container writing into your primary home
-directory.
+Desktop-home mode writes KDE and application state into `${HOST_HOME}`. The
+installer sets this under the ignored project `data/` directory so the container
+does not write into your primary host home by default.

@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily KDE Webtop image and stack update
+
+[Timer]
+OnCalendar=*-*-* 04:55:00
+RandomizedDelaySec=45m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

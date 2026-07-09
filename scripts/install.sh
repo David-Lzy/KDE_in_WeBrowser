@@ -116,17 +116,6 @@ confirm_overwrite() {
   esac
 }
 
-replace_secret() {
-  local key="$1"
-  local value
-  if command -v openssl >/dev/null 2>&1; then
-    value="$(openssl rand -hex 32)"
-  else
-    value="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
-  fi
-  sed -i "s#^${key}=.*#${key}=${value}#" .env
-}
-
 write_compose_local() {
   {
     echo "---"
@@ -146,14 +135,19 @@ write_compose_local() {
 if confirm_overwrite ".env"; then
   scripts/detect-host-user.sh "${host_user}" > .env
   cat ".env.${preset}.example" >> .env
-  replace_secret GATEWAY_COOKIE_SECRET
-  replace_secret BETTER_AUTH_SECRET
   echo "wrote .env using ${preset} preset"
 fi
 
 if confirm_overwrite "compose.local.yml"; then
   write_compose_local
   echo "wrote compose.local.yml"
+fi
+
+scripts/ensure-gateway-tls.sh
+if [[ -n "${AUTHELIA_BOOTSTRAP_PASSWORD:-}" ]]; then
+  scripts/ensure-authelia-config.sh
+else
+  echo "set AUTHELIA_BOOTSTRAP_PASSWORD and run scripts/ensure-authelia-config.sh before first start"
 fi
 
 compose_cmd=(docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml)

@@ -1,0 +1,12 @@
+[Unit]
+Description=Update KDE Webtop Docker Compose stack
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+RequiresMountsFor=/mnt/disk2/Personal_Project/KDE_in_WeBrowser /mnt/disk2/Docker_Server2/docker-data
+
+[Service]
+Type=oneshot
+User=davidli
+Group=davidli
+WorkingDirectory=/mnt/disk2/Personal_Project/KDE_in_WeBrowser
+ExecStart=/mnt/disk2/Personal_Project/KDE_in_WeBrowser/scripts/update-kde-webtop.sh
