@@ -34,15 +34,105 @@ elif [[ -f /etc/timezone ]]; then
   fi
 fi
 
-locale_value=""
-if command -v localectl >/dev/null 2>&1; then
-  locale_value="$(localectl show -p Locale --value 2>/dev/null | sed -nE 's/^LANG=//p' | head -n 1)"
+read_plasma_locale() {
+  local file="$1"
+  local group="$2"
+  local key="$3"
+
+  [[ -f "${file}" ]] || return 0
+  awk -F= -v target_group="${group}" -v target_key="${key}" '
+    /^\[/ {
+      current = $0
+      gsub(/^\[|\]$/, "", current)
+      next
+    }
+    current == target_group && $1 == target_key {
+      print $2
+      exit
+    }
+  ' "${file}"
+}
+
+read_pam_environment() {
+  local file="$1"
+  local key="$2"
+
+  [[ -f "${file}" ]] || return 0
+  awk -v target_key="${key}" '
+    $1 == target_key {
+      for (i = 2; i <= NF; i++) {
+        if ($i ~ /^DEFAULT=/) {
+          value = $i
+          sub(/^DEFAULT=/, "", value)
+          gsub(/^"|"$/, "", value)
+          print value
+          exit
+        }
+      }
+    }
+    index($0, target_key "=") == 1 {
+      value = $0
+      sub("^" target_key "=", "", value)
+      gsub(/^"|"$/, "", value)
+      print value
+      exit
+    }
+  ' "${file}"
+}
+
+normalize_locale() {
+  local value="$1"
+  value="${value%\"}"
+  value="${value#\"}"
+  case "${value}" in
+    ""|C|POSIX)
+      return 0
+      ;;
+    *)
+      printf '%s\n' "${value}"
+      ;;
+  esac
+}
+
+derive_language_from_locale() {
+  local value="$1"
+  value="${value%%.*}"
+  value="${value%%@*}"
+  case "${value}" in
+    ""|C|POSIX|C.UTF-8)
+      printf 'en_US\n'
+      ;;
+    *)
+      printf '%s\n' "${value}"
+      ;;
+  esac
+}
+
+plasma_locale_file="${host_home}/.config/plasma-localerc"
+pam_environment_file="${host_home}/.pam_environment"
+
+locale_value="$(normalize_locale "$(read_plasma_locale "${plasma_locale_file}" "Formats" "LANG")")"
+if [[ -z "${locale_value}" ]]; then
+  locale_value="$(normalize_locale "$(read_pam_environment "${pam_environment_file}" "LANG")")"
+fi
+if [[ -z "${locale_value}" ]] && command -v localectl >/dev/null 2>&1; then
+  locale_value="$(normalize_locale "$(localectl show -p Locale --value 2>/dev/null | sed -nE 's/^LANG=//p' | head -n 1)")"
 fi
 if [[ -z "${locale_value}" ]]; then
-  locale_value="$(locale | awk -F= '$1 == "LC_CTYPE" { gsub(/"/, "", $2); print $2 }')"
+  locale_value="$(normalize_locale "$(locale | awk -F= '$1 == "LC_CTYPE" { gsub(/"/, "", $2); print $2 }')")"
 fi
-if [[ -z "${locale_value}" || "${locale_value}" == "C" || "${locale_value}" == "POSIX" ]]; then
+if [[ -z "${locale_value}" ]]; then
   locale_value="C.UTF-8"
+fi
+
+language_value="$(normalize_locale "$(read_plasma_locale "${plasma_locale_file}" "Translations" "LANGUAGE")")"
+if [[ -z "${language_value}" ]]; then
+  language_value="$(normalize_locale "$(read_pam_environment "${pam_environment_file}" "LANGUAGE")")"
+fi
+if [[ -z "${language_value}" ]]; then
+  language_value="$(derive_language_from_locale "${locale_value}")"
+else
+  language_value="${language_value%%.*}"
 fi
 
 ssh_port="22"
@@ -75,6 +165,8 @@ HOST_HOME=${data_root}/home/${host_user}
 CONTAINER_USER=${container_user}
 
 TZ=${tz}
+WEBTOP_LANG=${locale_value}
+WEBTOP_LANGUAGE=${language_value}
 WEBTOP_LC_ALL=${locale_value}
 TITLE=KDE in Web Browser
 

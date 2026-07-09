@@ -39,6 +39,10 @@ cat >/tmp/codex-auto-hidpi.js <<'AUTOHIDPI'
       { type: "settings", settings: { scaling_dpi: targetDpi } },
       window.location.origin
     );
+    window.postMessage(
+      { type: "command", value: "/usr/local/bin/kde-webtop-scale-sync " + targetDpi },
+      window.location.origin
+    );
     console.log("[auto-hidpi] devicePixelRatio=" + dpr + " scaling_dpi=" + targetDpi);
   }
 
@@ -81,14 +85,26 @@ cat >/tmp/codex-auto-hidpi.js <<'AUTOHIDPI'
 })();
 AUTOHIDPI
 
-for webroot in /usr/share/selkies/selkies-dashboard /usr/share/selkies/web; do
+asset_version="${KDE_WEBTOP_SYNC_ASSET_VERSION:-kde-sync-v1}"
+
+for webroot in /usr/share/selkies/selkies-dashboard /usr/share/selkies/selkies-dashboard-wish /usr/share/selkies/web; do
   [[ -d "${webroot}" ]] || continue
   install -d -m 755 "${webroot}/src"
   install -m 644 /tmp/codex-auto-hidpi.js "${webroot}/src/codex-auto-hidpi.js"
 
   index="${webroot}/index.html"
-  if [[ -f "${index}" ]] && ! grep -q "codex-auto-hidpi.js" "${index}"; then
-    sed -i 's#</body>#<script src="src/codex-auto-hidpi.js"></script></body>#' "${index}"
-    echo "[auto-hidpi] Injected ${index}"
+  if [[ -f "${index}" ]]; then
+    script_src="src/codex-auto-hidpi.js"
+    if grep -q 'src="/src/' "${index}"; then
+      script_src="/src/codex-auto-hidpi.js"
+    fi
+    script_tag="<script src=\"${script_src}?v=${asset_version}\"></script>"
+    if grep -q "codex-auto-hidpi.js" "${index}"; then
+      sed -i -E "s#<script src=\"/?src/codex-auto-hidpi.js[^\"]*\"></script>#${script_tag}#g" "${index}"
+      echo "[auto-hidpi] Updated ${index}"
+    else
+      sed -i "s#</body>#${script_tag}</body>#" "${index}"
+      echo "[auto-hidpi] Injected ${index}"
+    fi
   fi
 done

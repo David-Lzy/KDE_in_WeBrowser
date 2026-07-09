@@ -50,7 +50,9 @@ apply_mode() {
   if command -v plasma-apply-colorscheme >/dev/null 2>&1; then
     plasma-apply-colorscheme "${scheme}" || true
   fi
-  if command -v lookandfeeltool >/dev/null 2>&1; then
+  if command -v plasma-apply-lookandfeel >/dev/null 2>&1; then
+    plasma-apply-lookandfeel -a "${look}" || true
+  elif command -v lookandfeeltool >/dev/null 2>&1; then
     lookandfeeltool -a "${look}" || true
   fi
   if command -v kwriteconfig6 >/dev/null 2>&1; then
@@ -155,15 +157,27 @@ cat >/tmp/codex-theme-sync.js <<'THEMEJS'
 })();
 THEMEJS
 
-for webroot in /usr/share/selkies/selkies-dashboard /usr/share/selkies/web; do
+asset_version="${KDE_WEBTOP_SYNC_ASSET_VERSION:-kde-sync-v1}"
+
+for webroot in /usr/share/selkies/selkies-dashboard /usr/share/selkies/selkies-dashboard-wish /usr/share/selkies/web; do
   [[ -d "${webroot}" ]] || continue
   install -d -m 755 "${webroot}/src"
   install -m 644 /tmp/codex-theme-sync.js "${webroot}/src/codex-theme-sync.js"
 
   index="${webroot}/index.html"
-  if [[ -f "${index}" ]] && ! grep -q "codex-theme-sync.js" "${index}"; then
-    sed -i 's#</body>#<script src="src/codex-theme-sync.js"></script></body>#' "${index}"
-    echo "[theme-sync] Injected ${index}"
+  if [[ -f "${index}" ]]; then
+    script_src="src/codex-theme-sync.js"
+    if grep -q 'src="/src/' "${index}"; then
+      script_src="/src/codex-theme-sync.js"
+    fi
+    script_tag="<script src=\"${script_src}?v=${asset_version}\"></script>"
+    if grep -q "codex-theme-sync.js" "${index}"; then
+      sed -i -E "s#<script src=\"/?src/codex-theme-sync.js[^\"]*\"></script>#${script_tag}#g" "${index}"
+      echo "[theme-sync] Updated ${index}"
+    else
+      sed -i "s#</body>#${script_tag}</body>#" "${index}"
+      echo "[theme-sync] Injected ${index}"
+    fi
   fi
 done
 

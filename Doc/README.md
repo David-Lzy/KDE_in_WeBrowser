@@ -6,7 +6,7 @@ Public user and contributor documentation for KDE in Web Browser.
 - `bandwidth.md`: low-bandwidth, balanced, and quality Selkies presets.
 - `host-user.md`: host user mapping and personal-home-mode behavior.
 - `terminals.md`: host SSH and Docker local terminal behavior.
-- `theme-sync.md`: browser dark/light preference synchronization into KDE.
+- `theme-sync.md`: Selkies dark/light, DPI, and locale synchronization into KDE.
 - `wechat-qq.md`: WeChat/QQ module build and data mapping.
 - `frpc.md`: optional frpc exposure for the authenticated gateway.
 - `install.md`: install script and local deployment files.

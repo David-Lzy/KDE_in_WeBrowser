@@ -36,6 +36,8 @@ services:
       HOST_HOME: "${HOST_HOME:-/home/davidli}"
       CONTAINER_USER: "${CONTAINER_USER:-docker_davidli}"
       TZ: "${TZ:-Australia/Adelaide}"
+      LANG: "${WEBTOP_LANG:-zh_CN.UTF-8}"
+      LANGUAGE: "${WEBTOP_LANGUAGE:-zh_CN}"
       LC_ALL: "${WEBTOP_LC_ALL:-zh_CN.UTF-8}"
       TITLE: "${TITLE:-KDE in Web Browser}"
       NVIDIA_VISIBLE_DEVICES: "${NVIDIA_VISIBLE_DEVICES:-all}"

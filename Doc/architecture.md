@@ -25,8 +25,10 @@ Custom init scripts are mounted into `/custom-cont-init.d`:
 
 - `50-xwayland-clipboard-bridge.sh` keeps text clipboard content synchronized
   between native Wayland applications and Xwayland applications.
+- `55-kde-session-prefs.sh` writes KDE locale/session defaults from the host
+  user's language and installs the KDE scale sync command used by Selkies.
 - `60-auto-hidpi-dpi.sh` injects client-side DPI selection so Selkies can map
-  browser device pixel ratio to a matching stream DPI.
+  browser device pixel ratio to a matching stream DPI and KDE scale state.
 
 ## Optional Modules
 

@@ -7,7 +7,8 @@ optional WeChat/QQ and frpc modules.
 ## Current Contents
 
 - `compose/webtop-kde.yml`: reusable LinuxServer Webtop KDE Compose template.
-- `custom-cont-init.d/`: Selkies/KDE init extensions for clipboard and HiDPI.
+- `custom-cont-init.d/`: Selkies/KDE init extensions for clipboard, locale,
+  theme, and HiDPI.
 - `gateway/nginx/`: HTTPS reverse proxy and Authelia `auth_request` template.
 - `modules/wechat-qq/`: WeChat/QQ image layer and launcher assets.
 - `modules/frpc/`: sanitized frpc examples.
