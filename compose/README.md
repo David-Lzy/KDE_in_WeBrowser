@@ -4,21 +4,16 @@ This directory contains reusable Docker Compose templates for the project.
 
 ## KDE Webtop
 
-Copy the sample environment file and set a private password before deployment:
+Generate local deployment files and start the stack:
 
 ```bash
-scripts/detect-host-user.sh "$USER" > .env
-$EDITOR .env
-docker compose --env-file .env -f compose/webtop-kde.yml up -d
+scripts/install.sh --preset balanced
+docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml up -d
 ```
 
-The template exposes LinuxServer Webtop KDE on:
-
-- HTTP: `127.0.0.1:18023`
-- HTTPS: `127.0.0.1:18024`
-
-Use HTTPS for normal browser access. Selkies features used by the desktop work
-best in a secure browser context.
+The template publishes only `gateway-nginx`, normally on
+`127.0.0.1:18080`. LinuxServer Webtop KDE stays inside the Docker network on
+ports `3000` and `3001`, and NGINX proxies authenticated traffic to it.
 
 Runtime state is written to `${HOST_HOME}` by default because that path is
 mounted as `/config`. This is personal-home mode: KDE config, desktop files,

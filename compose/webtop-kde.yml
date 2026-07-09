@@ -3,9 +3,9 @@ services:
   webtop-kde:
     image: lscr.io/linuxserver/webtop:ubuntu-kde
     container_name: "${CONTAINER_NAME:-kde-webtop}"
-    ports:
-      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-18023}:3000"
-      - "${HTTPS_BIND:-127.0.0.1}:${HTTPS_PORT:-18024}:3001"
+    expose:
+      - "3000"
+      - "3001"
     restart: unless-stopped
     volumes:
       - "${HOST_HOME:?set HOST_HOME or run scripts/detect-host-user.sh}:/config"
@@ -27,8 +27,6 @@ services:
       CONTAINER_USER: "${CONTAINER_USER:-docker_davidli}"
       TZ: "${TZ:-Australia/Adelaide}"
       LC_ALL: "${WEBTOP_LC_ALL:-zh_CN.UTF-8}"
-      CUSTOM_USER: "${CUSTOM_USER:-docker_davidli}"
-      PASSWORD: "${PASSWORD:?set PASSWORD in .env}"
       TITLE: "${TITLE:-KDE in Web Browser}"
       NVIDIA_VISIBLE_DEVICES: "${NVIDIA_VISIBLE_DEVICES:-all}"
       NVIDIA_DRIVER_CAPABILITIES: "${NVIDIA_DRIVER_CAPABILITIES:-all}"

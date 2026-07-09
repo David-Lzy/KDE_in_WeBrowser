@@ -18,7 +18,6 @@ Important fields:
 - `HOST_HOME`: host path mounted as `/config`.
 - `CONTAINER_USER`: compatibility account added inside the container, normally
   `docker_${HOST_USER}`.
-- `CUSTOM_USER`: Web UI login username.
 
 LinuxServer Webtop still keeps its internal `abc` account. The project adds a
 second passwd/group entry for `CONTAINER_USER` with the same UID/GID and

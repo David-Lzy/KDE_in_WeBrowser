@@ -32,9 +32,15 @@ elif [[ -f /etc/timezone ]]; then
   fi
 fi
 
-locale_value="$(locale | awk -F= '$1 == "LC_CTYPE" { gsub(/"/, "", $2); print $2 }')"
+locale_value=""
+if command -v localectl >/dev/null 2>&1; then
+  locale_value="$(localectl show -p Locale --value 2>/dev/null | sed -nE 's/^LANG=//p' | head -n 1)"
+fi
+if [[ -z "${locale_value}" ]]; then
+  locale_value="$(locale | awk -F= '$1 == "LC_CTYPE" { gsub(/"/, "", $2); print $2 }')"
+fi
 if [[ -z "${locale_value}" || "${locale_value}" == "C" || "${locale_value}" == "POSIX" ]]; then
-  locale_value="zh_CN.UTF-8"
+  locale_value="C.UTF-8"
 fi
 
 ssh_port="22"
@@ -60,11 +66,6 @@ cat <<EOF
 COMPOSE_PROJECT_NAME=kde-in-web-browser
 CONTAINER_NAME=kde-webtop
 
-HTTP_BIND=127.0.0.1
-HTTP_PORT=18023
-HTTPS_BIND=127.0.0.1
-HTTPS_PORT=18024
-
 HOST_USER=${host_user}
 HOST_UID=${host_uid}
 HOST_GID=${host_gid}
@@ -73,8 +74,6 @@ CONTAINER_USER=${container_user}
 
 TZ=${tz}
 WEBTOP_LC_ALL=${locale_value}
-CUSTOM_USER=${container_user}
-PASSWORD=change-me
 TITLE=KDE in Web Browser
 
 SHM_SIZE=2gb
@@ -144,4 +143,4 @@ GATEWAY_COOLDOWN_LOCK_SECONDS=300
 PAM_HELPER_SOCKET=/run/kde-webtop-pam/helper.sock
 EOF
 
-echo "edit PASSWORD before exposing the desktop" >&2
+echo "login through the gateway with the host account password" >&2

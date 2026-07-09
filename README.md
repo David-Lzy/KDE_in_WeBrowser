@@ -1,7 +1,8 @@
 # KDE in Web Browser
 
 Personal browser-accessible Linux desktop built around KDE Wayland, Docker,
-Selkies/Webtop, host-user integration, and an optional WeChat/QQ module.
+Selkies/Webtop, a PAM-backed gateway, host-user integration, and optional
+WeChat/QQ and frpc modules.
 
 ## Current Contents
 
@@ -18,9 +19,12 @@ scripts/install.sh --preset balanced
 docker compose --env-file .env -f compose/webtop-kde.yml -f compose.local.yml up -d
 ```
 
-Set a private `PASSWORD` in `.env` before exposing the desktop beyond localhost.
-By default, the selected host user's home directory is mounted as `/config`,
-so KDE state and desktop files are written into that host home.
+Open the gateway URL from `.env`, normally `http://127.0.0.1:18080`. The
+gateway authenticates with the selected host account through the host-side PAM
+helper. The raw Webtop ports are not published by default.
+
+By default, the selected host user's home directory is mounted as `/config`, so
+KDE state and desktop files are written into that host home.
 
 Run the validation gate before publishing or after changing Compose/runtime
 behavior:
