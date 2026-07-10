@@ -34,8 +34,9 @@ The template publishes only the TLS listener of `gateway-nginx`, normally on
 network on ports `3000` and `3001`. NGINX protects Webtop with `auth_request`
 and then proxies authenticated traffic to it. The default provider is the
 host-side PAM auth helper; Authelia remains available as an optional fallback.
-NGINX keeps container-local HTTP on `8080`, but that port is not published to
-the host.
+In public ACME mode, Certbot standalone opens TCP port `80` temporarily outside
+Docker during certificate issuance and renewal; Docker still publishes only the
+HTTPS gateway.
 
 Runtime state is written to `${HOST_HOME}` because that path is mounted as
 `/config`. The installer sets it to a project-local directory under
@@ -85,6 +86,18 @@ Host/user identity controls:
 - `CONTAINER_USER`
 - `CONTAINER_HOSTNAME`
 
+Network detection metadata written by the wizard:
+
+- `NETWORK_EXPOSURE`
+- `NETWORK_EXPOSURE_REASON`
+- `NETWORK_ROUTE_IPV4`
+- `NETWORK_ROUTE_IFACE`
+- `NETWORK_PUBLIC_IPV4`
+- `NETWORK_PUBLIC_IP_SERVICE`
+- `NETWORK_DEFAULT_SSLIP_DOMAIN`
+- `NETWORK_PORT_80_STATE`
+- `NETWORK_PORT_443_STATE`
+
 Theme sync controls:
 
 - `ENABLE_THEME_SYNC`
@@ -116,6 +129,18 @@ Gateway and Authelia controls:
 - `GATEWAY_TLS_CERT`
 - `GATEWAY_TLS_KEY`
 - `GATEWAY_TLS_SANS`
+
+Public ACME controls:
+
+- `ACME_ENABLED`
+- `ACME_PROVIDER`
+- `ACME_DOMAIN`
+- `ACME_EMAIL`
+- `ACME_CERT_NAME`
+- `ACME_HTTP_PORT`
+- `ACME_STAGING`
+- `ACME_ALLOW_NO_EMAIL`
+- `ACME_AUTO_RENEW`
 
 PAM auth helper controls:
 

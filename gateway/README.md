@@ -6,6 +6,11 @@ The active gateway is split into two Docker services:
 - `authelia`: optional authentication portal and authorization endpoint.
 - host PAM auth helper: default live host-password authentication service.
 
+The reusable NGINX template still contains an internal HTTP listener, but the
+default Compose file publishes only the HTTPS listener. Public ACME mode uses
+Certbot standalone to open TCP port `80` temporarily outside Docker during
+certificate issuance and renewal.
+
 ## Gateway Flow
 
 1. Browser requests `/`.

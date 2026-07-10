@@ -28,6 +28,7 @@ generate_authelia=false
 generate_tls=true
 install_pam_auth_helper=false
 setup_host_ssh_key=false
+setup_public_acme=false
 
 usage() {
   cat <<'EOF'
@@ -381,6 +382,36 @@ build_tls_sans() {
   printf '%s\n' "${sans}"
 }
 
+public_url_for_domain_port() {
+  local domain="$1"
+  local port="$2"
+  if [[ "${port}" == "443" ]]; then
+    printf 'https://%s\n' "${domain}"
+  else
+    printf 'https://%s:%s\n' "${domain}" "${port}"
+  fi
+}
+
+safe_cert_name() {
+  local value="$1"
+  value="$(printf '%s' "${value}" | tr -c 'A-Za-z0-9_.-' '-')"
+  value="${value#-}"
+  value="${value%-}"
+  printf 'kde-webtop-%s\n' "${value:-gateway}"
+}
+
+detect_network_exposure() {
+  local tmp_network
+  tmp_network="$(mktemp)"
+  if scripts/detect-network-exposure.sh >"${tmp_network}" 2>/tmp/kde-in-webbrowser-network-detect.log; then
+    load_env_file "${tmp_network}"
+  else
+    env[NETWORK_EXPOSURE]="unknown"
+    env[NETWORK_EXPOSURE_REASON]="detect_failed"
+  fi
+  rm -f "${tmp_network}"
+}
+
 compose_path_to_repo_path() {
   local value="$1"
   case "${value}" in
@@ -461,6 +492,8 @@ write_env_file() {
     COMPOSE_PROJECT_NAME CONTAINER_NAME WEBTOP_IMAGE NGINX_IMAGE FRPC_IMAGE
   write_env_section "Host user and project-local desktop home" \
     HOST_USER HOST_UID HOST_GID HOST_HOME CONTAINER_USER CONTAINER_HOSTNAME
+  write_env_section "Network exposure detection" \
+    NETWORK_EXPOSURE NETWORK_EXPOSURE_REASON NETWORK_ROUTE_IPV4 NETWORK_ROUTE_IFACE NETWORK_PUBLIC_IPV4 NETWORK_PUBLIC_IP_SERVICE NETWORK_DEFAULT_SSLIP_DOMAIN NETWORK_PORT_80_STATE NETWORK_PORT_443_STATE
   write_env_section "Container session" \
     TZ WEBTOP_LANG WEBTOP_LANGUAGE WEBTOP_LC_ALL TITLE
   write_env_section "Display and GPU" \
@@ -479,6 +512,8 @@ write_env_file() {
     ENABLE_WECHAT_QQ_MODULE INSTALL_WECHAT INSTALL_QQ INSTALL_PCMANFM AUTO_START_WECHAT AUTO_START_QQ WECHAT_PROFILE_DIR WECHAT_FILES_DIR QQ_DATA_DIR
   write_env_section "Auth gateway" \
     GATEWAY_BIND GATEWAY_PORT GATEWAY_PUBLIC_BASE_URL GATEWAY_AUTH_PROVIDER GATEWAY_AUTH_INTERNAL_URI GATEWAY_TLS_CERT GATEWAY_TLS_KEY GATEWAY_TLS_SANS
+  write_env_section "Public ACME" \
+    ACME_ENABLED ACME_PROVIDER ACME_DOMAIN ACME_EMAIL ACME_CERT_NAME ACME_HTTP_PORT ACME_STAGING ACME_ALLOW_NO_EMAIL ACME_AUTO_RENEW
   write_env_section "PAM auth helper" \
     PAM_AUTH_RUN_DIR PAM_AUTH_STATE_DIR PAM_AUTH_SOCKET_CONTAINER PAM_AUTH_SERVICE PAM_AUTH_ALLOWED_USERS PAM_AUTH_SESSION_TTL_SECONDS PAM_AUTH_COOKIE_NAME
   write_env_section "Authelia" \
@@ -494,8 +529,8 @@ apply_bandwidth_preset() {
 
 run_post_actions() {
   if [[ "${no_actions}" == "true" ]]; then
-    say "已跳过 TLS、PAM helper、Authelia、终端资产同步、SSH key 和启动动作（--no-actions）。" \
-        "Skipped TLS, PAM helper, Authelia, terminal asset sync, SSH key, and start actions (--no-actions)."
+    say "已跳过 TLS、PAM helper、Authelia、终端资产同步、ACME、SSH key 和启动动作（--no-actions）。" \
+        "Skipped TLS, PAM helper, Authelia, terminal asset sync, ACME, SSH key, and start actions (--no-actions)."
     return
   fi
 
@@ -551,6 +586,15 @@ run_post_actions() {
     "${compose_cmd[@]}" up -d
   fi
 
+  if [[ "${setup_public_acme}" == "true" ]]; then
+    if [[ "${start_stack}" != "true" ]]; then
+      say "ACME 申请需要 gateway-nginx 已启动；请启动后运行 scripts/setup-public-acme.sh。" \
+          "ACME issuance needs gateway-nginx to be running; run scripts/setup-public-acme.sh after starting."
+    else
+      scripts/setup-public-acme.sh --env-file "${env_file}"
+    fi
+  fi
+
   if [[ "${setup_host_ssh_key}" == "true" ]]; then
     if [[ "${env_file}" != ".env" ]]; then
       say "Host SSH key 生成仅在输出文件为 .env 时自动执行；当前已跳过。" \
@@ -594,6 +638,22 @@ tmp_defaults="$(mktemp)"
 KDE_WEBTOP_DATA_ROOT="${data_root}" scripts/detect-host-user.sh "${host_user}" > "${tmp_defaults}"
 load_env_file "${tmp_defaults}"
 rm -f "${tmp_defaults}"
+
+detect_network_exposure
+case "${env[NETWORK_EXPOSURE]:-unknown}" in
+  private_or_nat)
+    say "网络检测：本机 IPv4=${env[NETWORK_ROUTE_IPV4]:-unknown}，公网出口=${env[NETWORK_PUBLIC_IPV4]:-unknown}，推荐使用 frpc 暴露网关。" \
+        "Network detection: local IPv4=${env[NETWORK_ROUTE_IPV4]:-unknown}, public egress=${env[NETWORK_PUBLIC_IPV4]:-unknown}; frpc is recommended."
+    ;;
+  public_direct)
+    say "网络检测：本机似乎直接拥有公网 IPv4=${env[NETWORK_PUBLIC_IPV4]:-unknown}，可以配置免费域名和自动 TLS。" \
+        "Network detection: this host appears to have public IPv4=${env[NETWORK_PUBLIC_IPV4]:-unknown}; free DNS and automatic TLS can be configured."
+    ;;
+  *)
+    say "网络检测：无法确认是否公网直连，将保持本地默认值。" \
+        "Network detection: public reachability is unknown; local defaults will be kept."
+    ;;
+esac
 
 env[COMPOSE_PROJECT_NAME]="$(prompt_default "Compose 项目名" "Compose project name" "${env[COMPOSE_PROJECT_NAME]}")"
 env[CONTAINER_NAME]="$(prompt_default "Webtop 容器名" "Webtop container name" "${env[CONTAINER_NAME]}")"
@@ -656,9 +716,57 @@ if [[ "${env[ENABLE_WECHAT_QQ_MODULE]}" == "true" ]]; then
   env[QQ_DATA_DIR]="$(prompt_default "QQ 数据目录" "QQ data directory" "${env[QQ_DATA_DIR]}")"
 fi
 
+if [[ "${env[NETWORK_EXPOSURE]:-unknown}" == "public_direct" ]]; then
+  if [[ "$(prompt_bool "检测到公网直连，是否配置免费 sslip.io/手工域名和 Let's Encrypt 自动续签？" "Public IPv4 detected. Configure free sslip.io/manual domain and Let's Encrypt auto-renewal?" true)" == "true" ]]; then
+    env[ACME_PROVIDER]="$(prompt_choice "公网域名方式" "Public domain provider" "${env[ACME_PROVIDER]:-sslip}" "sslip|manual|skip")"
+    case "${env[ACME_PROVIDER]}" in
+      sslip)
+        acme_domain_default="${env[NETWORK_DEFAULT_SSLIP_DOMAIN]:-}"
+        if [[ -z "${acme_domain_default}" ]]; then
+          env[ACME_PROVIDER]="skip"
+          env[ACME_ENABLED]="false"
+        else
+          env[ACME_DOMAIN]="$(prompt_default "sslip.io 域名" "sslip.io domain" "${acme_domain_default}")"
+        fi
+        ;;
+      manual)
+        env[ACME_DOMAIN]="$(prompt_required_or_skip "公网域名，需 A 记录指向本机公网 IP" "Public domain with an A record pointing to this host")"
+        if [[ "${env[ACME_DOMAIN]}" == "__SKIP__" ]]; then
+          env[ACME_PROVIDER]="skip"
+          env[ACME_ENABLED]="false"
+        fi
+        ;;
+      skip)
+        env[ACME_ENABLED]="false"
+        ;;
+    esac
+
+    if [[ "${env[ACME_PROVIDER]}" != "skip" ]]; then
+      env[ACME_EMAIL]="$(prompt_required_or_skip "Let's Encrypt 邮箱" "Let's Encrypt email")"
+      if [[ "${env[ACME_EMAIL]}" == "__SKIP__" ]]; then
+        env[ACME_ENABLED]="false"
+        env[ACME_EMAIL]=""
+      else
+        env[ACME_ENABLED]="true"
+        env[ACME_CERT_NAME]="$(safe_cert_name "${env[ACME_DOMAIN]}")"
+        env[ACME_HTTP_PORT]="$(prompt_default "ACME HTTP-01 临时监听端口（公网必须转发 80）" "ACME HTTP-01 temporary listen port (public port must be 80)" "${env[ACME_HTTP_PORT]:-80}")"
+        env[ACME_STAGING]="$(prompt_bool "使用 Let's Encrypt staging 测试环境？" "Use Let's Encrypt staging environment?" "${env[ACME_STAGING]:-false}")"
+        env[ACME_AUTO_RENEW]="$(prompt_bool "安装 systemd 自动续签 timer？" "Install systemd auto-renewal timer?" "${env[ACME_AUTO_RENEW]:-true}")"
+        env[GATEWAY_BIND]="0.0.0.0"
+        env[GATEWAY_PORT]="443"
+        env[GATEWAY_PUBLIC_BASE_URL]="$(public_url_for_domain_port "${env[ACME_DOMAIN]}" "${env[GATEWAY_PORT]}")"
+        env[GATEWAY_TLS_CERT]="../ssl/${env[ACME_CERT_NAME]}.fullchain.pem"
+        env[GATEWAY_TLS_KEY]="../ssl/${env[ACME_CERT_NAME]}.privkey.pem"
+        env[GATEWAY_TLS_SANS]="DNS:${env[ACME_DOMAIN]},IP:127.0.0.1,DNS:localhost"
+        setup_public_acme="$(prompt_bool "启动后立即申请并部署 Let's Encrypt 证书？" "Issue and deploy the Let's Encrypt certificate after start?" true)"
+      fi
+    fi
+  fi
+fi
+
 env[GATEWAY_BIND]="$(prompt_default "网关监听地址" "Gateway bind address" "${env[GATEWAY_BIND]}")"
 env[GATEWAY_PORT]="$(prompt_default "网关 HTTPS 端口" "Gateway HTTPS port" "${env[GATEWAY_PORT]}")"
-default_public_url="https://127.0.0.1:${env[GATEWAY_PORT]}"
+default_public_url="${env[GATEWAY_PUBLIC_BASE_URL]:-$(public_url_for_domain_port "127.0.0.1" "${env[GATEWAY_PORT]}")}"
 env[GATEWAY_PUBLIC_BASE_URL]="$(prompt_default "主要访问 URL" "Primary access URL" "${default_public_url}")"
 env[GATEWAY_AUTH_PROVIDER]="$(prompt_choice "网关认证方式" "Gateway authentication provider" "${env[GATEWAY_AUTH_PROVIDER]:-pam}" "pam|authelia")"
 case "${env[GATEWAY_AUTH_PROVIDER]}" in
@@ -679,7 +787,11 @@ case "${env[GATEWAY_AUTH_PROVIDER]}" in
     ;;
 esac
 
-frpc_enabled="$(prompt_bool "是否生成并启用 frpc 配置？" "Generate and enable frpc config?" false)"
+frpc_default=false
+if [[ "${env[NETWORK_EXPOSURE]:-unknown}" == "private_or_nat" ]]; then
+  frpc_default=true
+fi
+frpc_enabled="$(prompt_bool "是否生成并启用 frpc 配置？" "Generate and enable frpc config?" "${frpc_default}")"
 if [[ "${frpc_enabled}" == "true" ]]; then
   frpc_file="$(prompt_default "frpc 配置输出路径" "frpc config output path" "${frpc_file}")"
   frpc_server_addr="$(prompt_required_or_skip "frps 公网地址/IP" "frps public host/IP")"
@@ -715,7 +827,13 @@ env[AUTHELIA_USER]="$(prompt_default "Authelia 用户名" "Authelia username" "$
 env[AUTHELIA_DISPLAY_NAME]="$(prompt_default "Authelia 显示名" "Authelia display name" "${env[AUTHELIA_DISPLAY_NAME]}")"
 env[AUTHELIA_EMAIL]="$(prompt_default "Authelia 邮箱" "Authelia email" "${env[AUTHELIA_EMAIL]}")"
 
-generate_tls="$(prompt_bool "现在生成/确认本地 TLS 证书？" "Generate/ensure local TLS certificate now?" true)"
+if [[ "${env[ACME_ENABLED]:-false}" == "true" ]]; then
+  generate_tls=true
+  say "ACME 模式会先生成自签占位证书，再由 Let's Encrypt 证书覆盖。" \
+      "ACME mode will create a self-signed placeholder first, then replace it with the Let's Encrypt certificate."
+else
+  generate_tls="$(prompt_bool "现在生成/确认本地 TLS 证书？" "Generate/ensure local TLS certificate now?" true)"
+fi
 if [[ "${env[GATEWAY_AUTH_PROVIDER]}" == "authelia" ]]; then
   generate_authelia_default=true
 else
@@ -736,7 +854,11 @@ while [[ "$(prompt_bool "是否添加额外 bind mount？" "Add an extra bind mo
 done
 
 if [[ "${start_stack}" != "true" ]]; then
-  start_stack="$(prompt_bool "写入配置后立即启动/更新 Docker Compose？" "Start/update Docker Compose after writing config?" false)"
+  start_default=false
+  if [[ "${setup_public_acme}" == "true" ]]; then
+    start_default=true
+  fi
+  start_stack="$(prompt_bool "写入配置后立即启动/更新 Docker Compose？" "Start/update Docker Compose after writing config?" "${start_default}")"
 fi
 
 confirm_output_path "${env_file}"

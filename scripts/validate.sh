@@ -105,13 +105,14 @@ nginx_check() {
   docker run --rm \
     -e GATEWAY_AUTH_PROVIDER=pam \
     -e GATEWAY_AUTH_INTERNAL_URI=/internal/pam/authz \
+    -e GATEWAY_PUBLIC_BASE_URL=https://127.0.0.1:18080 \
     -e PAM_AUTH_SOCKET_CONTAINER=/run/kde-pam-auth/pam-helper.sock \
     --add-host authelia:127.0.0.1 \
     --add-host webtop-kde:127.0.0.1 \
     -v "${repo_root}/gateway/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro" \
     -v "${tmp_certs}:/etc/nginx/certs:ro" \
     nginx:mainline-alpine \
-    sh -c 'envsubst "\${GATEWAY_AUTH_PROVIDER} \${GATEWAY_AUTH_INTERNAL_URI} \${PAM_AUTH_SOCKET_CONTAINER}" < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -t'
+    sh -c 'envsubst "\${GATEWAY_AUTH_PROVIDER} \${GATEWAY_AUTH_INTERNAL_URI} \${GATEWAY_PUBLIC_BASE_URL} \${PAM_AUTH_SOCKET_CONTAINER}" < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -t'
   local status=$?
   rm -rf "${tmp_certs}"
   return "${status}"

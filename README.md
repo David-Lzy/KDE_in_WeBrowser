@@ -101,6 +101,10 @@ The wizard asks for Chinese or English prompts first. Press Enter to use the
 recommended value. For sensitive required values such as frpc token or Authelia
 bootstrap password, enter a value or type `skip` explicitly.
 
+It also detects the host network shape. Private/NAT hosts are guided toward
+frpc. Public-direct hosts can opt into an `sslip.io` or manual domain with
+Let's Encrypt HTTP-01 certificates and automatic renewal.
+
 Unattended local setup with recommended defaults:
 
 ```bash
@@ -297,6 +301,7 @@ host-user compatibility, and KDE desktop processes.
 - [Theme, locale, and DPI sync](Doc/theme-sync.md)
 - [Bandwidth presets](Doc/bandwidth.md)
 - [frpc](Doc/frpc.md)
+- [Public DNS and ACME](Doc/public-acme.md)
 - [Validation](Doc/validation.md)
 - [Gateway](gateway/README.md)
 - [PAM auth helper](gateway/pam-auth/README.md)

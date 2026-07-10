@@ -22,6 +22,10 @@ The wizard:
   the host PAM auth helper, generate Authelia config, sync host
   terminal fonts/Konsole settings, set up the host SSH key, validate Compose,
   and start the stack.
+- detects whether the host looks private/NAT or public-direct. Private/NAT
+  hosts are guided toward frpc; public-direct hosts can configure an `sslip.io`
+  or manual domain plus Let's Encrypt HTTP-01 certificates and automatic
+  renewal.
 
 Fully unattended local setup with recommended defaults:
 
@@ -37,6 +41,8 @@ container-to-host SSH key after the Webtop container is running.
 Unattended setup still needs either root or passwordless sudo for the host PAM
 helper. Sensitive values are not guessed: frpc stays disabled unless you rerun
 the wizard with the token or edit `.env` and `modules/frpc/frpc.toml`.
+Public ACME also stays disabled under `--defaults`, because it needs a real
+domain/email confirmation and public TCP port `80`.
 
 Useful wizard options:
 
@@ -138,6 +144,9 @@ https://127.0.0.1:18080
 The gateway uses host PAM authentication by default. Raw Webtop ports are not
 published by default. Authelia can be enabled as an optional fallback auth
 provider.
+
+For public-direct hosts, see [Public DNS and ACME](public-acme.md). For NAT,
+CGNAT, LAN-only, or Tailscale-only hosts, see [frpc](frpc.md).
 
 Useful options:
 

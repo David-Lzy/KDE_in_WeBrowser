@@ -110,6 +110,7 @@ services:
     environment:
       GATEWAY_AUTH_PROVIDER: "${GATEWAY_AUTH_PROVIDER:-pam}"
       GATEWAY_AUTH_INTERNAL_URI: "${GATEWAY_AUTH_INTERNAL_URI:-/internal/pam/authz}"
+      GATEWAY_PUBLIC_BASE_URL: "${GATEWAY_PUBLIC_BASE_URL:-https://127.0.0.1:18080}"
       PAM_AUTH_SOCKET_CONTAINER: "${PAM_AUTH_SOCKET_CONTAINER:-/run/kde-pam-auth/pam-helper.sock}"
     ports:
       - "${GATEWAY_BIND:-127.0.0.1}:${GATEWAY_PORT:-18080}:8443"

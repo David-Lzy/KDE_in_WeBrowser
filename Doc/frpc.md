@@ -2,6 +2,11 @@
 
 frpc is optional and disabled by default.
 
+The deployment wizard recommends frpc when network detection reports
+`private_or_nat`, including LAN-only, CGNAT, and Tailscale-only hosts. If the
+host has a public IPv4 and public TCP port `80`, see
+[Public DNS and ACME](public-acme.md) instead.
+
 Enable it by copying the sanitized example and using the `frpc` profile:
 
 ```bash
