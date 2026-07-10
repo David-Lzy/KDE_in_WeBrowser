@@ -2,10 +2,11 @@
 
 frpc is optional and disabled by default.
 
-The deployment wizard recommends frpc when network detection reports
-`private_or_nat`, including LAN-only, CGNAT, and Tailscale-only hosts. If the
-host has a public IPv4 and public TCP port `80`, see
-[Public DNS and ACME](public-acme.md) instead.
+When network detection reports `private_or_nat`, including LAN-only, CGNAT, and
+Tailscale-only hosts, the deployment wizard lets you choose local-only, frpc,
+Cloudflare named tunnel, or Cloudflare quick tunnel. If you prefer Cloudflare,
+see [Cloudflare Tunnel](cloudflare-tunnel.md). If the host has a public IPv4
+and public TCP port `80`, see [Public DNS and ACME](public-acme.md) instead.
 
 Enable it by copying the sanitized example and using the `frpc` profile:
 

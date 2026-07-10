@@ -3,6 +3,11 @@ map $http_upgrade $connection_upgrade {
     '' close;
 }
 
+map $http_x_forwarded_proto $gateway_forwarded_proto {
+    default $http_x_forwarded_proto;
+    '' $scheme;
+}
+
 upstream pam_auth_helper {
     server unix:${PAM_AUTH_SOCKET_CONTAINER};
 }
@@ -12,28 +17,6 @@ server {
     server_name _;
     absolute_redirect off;
 
-    location /healthz {
-        add_header Content-Type application/json;
-        return 200 '{"ok":true,"auth":"${GATEWAY_AUTH_PROVIDER}"}\n';
-    }
-
-    location / {
-        return 301 ${GATEWAY_PUBLIC_BASE_URL}$request_uri;
-    }
-}
-
-server {
-    listen 8443 ssl;
-    server_name _;
-    absolute_redirect off;
-
-    ssl_certificate /etc/nginx/certs/kde-webtop.crt;
-    ssl_certificate_key /etc/nginx/certs/kde-webtop.key;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 1d;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers off;
-
     location = /internal/authelia/authz {
         internal;
         proxy_pass http://authelia:9091/authelia/api/authz/auth-request;
@@ -41,11 +24,11 @@ server {
         proxy_set_header Content-Length "";
         proxy_set_header Connection "";
         proxy_set_header X-Original-Method $request_method;
-        proxy_set_header X-Original-URL $scheme://$http_host$request_uri;
+        proxy_set_header X-Original-URL $gateway_forwarded_proto://$http_host$request_uri;
         proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Host $http_host;
         proxy_set_header X-Forwarded-Method $request_method;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $gateway_forwarded_proto;
         proxy_set_header X-Forwarded-URI $request_uri;
         proxy_set_header X-Forwarded-Ssl on;
     }
@@ -62,7 +45,7 @@ server {
         proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Host $http_host;
         proxy_set_header X-Forwarded-Method $request_method;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $gateway_forwarded_proto;
     }
 
     location /authelia/ {
@@ -72,7 +55,7 @@ server {
         proxy_set_header Host $http_host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Host $http_host;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $gateway_forwarded_proto;
         proxy_set_header X-Forwarded-URI $request_uri;
         proxy_read_timeout 3600;
         proxy_send_timeout 3600;
@@ -85,7 +68,7 @@ server {
         proxy_set_header Host $http_host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Host $http_host;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $gateway_forwarded_proto;
         proxy_read_timeout 3600;
         proxy_send_timeout 3600;
     }
@@ -115,7 +98,106 @@ server {
         proxy_set_header Remote-Email $email;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Host $http_host;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $gateway_forwarded_proto;
+        proxy_read_timeout 3600;
+        proxy_send_timeout 3600;
+    }
+}
+
+server {
+    listen 8443 ssl;
+    server_name _;
+    absolute_redirect off;
+
+    ssl_certificate /etc/nginx/certs/kde-webtop.crt;
+    ssl_certificate_key /etc/nginx/certs/kde-webtop.key;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+
+    location = /internal/authelia/authz {
+        internal;
+        proxy_pass http://authelia:9091/authelia/api/authz/auth-request;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Connection "";
+        proxy_set_header X-Original-Method $request_method;
+        proxy_set_header X-Original-URL $gateway_forwarded_proto://$http_host$request_uri;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header X-Forwarded-Method $request_method;
+        proxy_set_header X-Forwarded-Proto $gateway_forwarded_proto;
+        proxy_set_header X-Forwarded-URI $request_uri;
+        proxy_set_header X-Forwarded-Ssl on;
+    }
+
+    location = /internal/pam/authz {
+        internal;
+        proxy_pass http://pam_auth_helper/auth/verify;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Connection "";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Original-Method $request_method;
+        proxy_set_header X-Original-URI $request_uri;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header X-Forwarded-Method $request_method;
+        proxy_set_header X-Forwarded-Proto $gateway_forwarded_proto;
+    }
+
+    location /authelia/ {
+        proxy_pass http://authelia:9091;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header X-Forwarded-Proto $gateway_forwarded_proto;
+        proxy_set_header X-Forwarded-URI $request_uri;
+        proxy_read_timeout 3600;
+        proxy_send_timeout 3600;
+    }
+
+    location /auth/ {
+        proxy_pass http://pam_auth_helper;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header X-Forwarded-Proto $gateway_forwarded_proto;
+        proxy_read_timeout 3600;
+        proxy_send_timeout 3600;
+    }
+
+    location /healthz {
+        add_header Content-Type application/json;
+        return 200 '{"ok":true,"auth":"${GATEWAY_AUTH_PROVIDER}"}\n';
+    }
+
+    location / {
+        auth_request ${GATEWAY_AUTH_INTERNAL_URI};
+        auth_request_set $redirection_url $upstream_http_location;
+        auth_request_set $user $upstream_http_remote_user;
+        auth_request_set $groups $upstream_http_remote_groups;
+        auth_request_set $name $upstream_http_remote_name;
+        auth_request_set $email $upstream_http_remote_email;
+        error_page 401 =302 $redirection_url;
+
+        proxy_pass http://webtop-kde:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $http_host;
+        proxy_set_header Remote-User $user;
+        proxy_set_header Remote-Groups $groups;
+        proxy_set_header Remote-Name $name;
+        proxy_set_header Remote-Email $email;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header X-Forwarded-Proto $gateway_forwarded_proto;
         proxy_read_timeout 3600;
         proxy_send_timeout 3600;
     }

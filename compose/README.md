@@ -38,6 +38,11 @@ In public ACME mode, Certbot standalone opens TCP port `80` temporarily outside
 Docker during certificate issuance and renewal; Docker still publishes only the
 HTTPS gateway.
 
+Cloudflare Tunnel uses the internal NGINX HTTP listener
+`http://gateway-nginx:8080` as its origin. That listener exists only on the
+Docker network and should not be published to the host. It runs the same
+PAM/Authelia auth gateway before proxying to Webtop.
+
 Runtime state is written to `${HOST_HOME}` because that path is mounted as
 `/config`. The installer sets it to a project-local directory under
 `data/home/<user>` so KDE config, desktop files, downloads, and application
@@ -88,6 +93,7 @@ Host/user identity controls:
 
 Network detection metadata written by the wizard:
 
+- `EXPOSURE_METHOD`
 - `NETWORK_EXPOSURE`
 - `NETWORK_EXPOSURE_REASON`
 - `NETWORK_ROUTE_IPV4`
@@ -142,6 +148,20 @@ Public ACME controls:
 - `ACME_ALLOW_NO_EMAIL`
 - `ACME_AUTO_RENEW`
 
+Cloudflare Tunnel controls:
+
+- `CLOUDFLARED_IMAGE`
+- `CLOUDFLARE_API_BASE_URL`
+- `CLOUDFLARED_ORIGIN_URL`
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_ZONE_ID`
+- `CLOUDFLARE_HOSTNAME`
+- `CLOUDFLARE_TUNNEL_NAME`
+- `CLOUDFLARE_TUNNEL_ID`
+- `CLOUDFLARED_TUNNEL_TOKEN`
+- `CLOUDFLARE_DNS_PROXIED`
+
 PAM auth helper controls:
 
 - `PAM_AUTH_RUN_DIR`
@@ -165,3 +185,8 @@ frpc is disabled by default. To enable it, copy
 `modules/frpc/frpc.example.toml` to `modules/frpc/frpc.toml`, fill in secrets
 locally, then run with `--profile frpc`. The deployment wizard can also write
 this file and sets `FRPC_CONFIG_FILE` in `.env` when a custom path is selected.
+
+Cloudflare named tunnel runs with `--profile cloudflare`. Cloudflare quick
+tunnel runs with `--profile cloudflare-quick`. The deployment wizard can set
+both modes, and `scripts/setup-cloudflare-tunnel.sh` configures the named
+tunnel through the Cloudflare API.

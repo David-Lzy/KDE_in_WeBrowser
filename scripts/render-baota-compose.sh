@@ -107,6 +107,7 @@ set_default REPO_DIR "$repo_dir"
 set_default WEBTOP_IMAGE "kde-webtop:wechat-qq"
 set_default NGINX_IMAGE "nginx:mainline-alpine"
 set_default FRPC_IMAGE "snowdreamtech/frpc:nightly"
+set_default CLOUDFLARED_IMAGE "cloudflare/cloudflared:latest"
 
 for key in \
   HOST_HOME \
@@ -132,11 +133,11 @@ mkdir -p "$(dirname "$output_file")" "$(dirname "$output_env")"
   write_env_section "Baota compose paths" \
     REPO_DIR
   write_env_section "Compose project" \
-    COMPOSE_PROJECT_NAME CONTAINER_NAME WEBTOP_IMAGE NGINX_IMAGE FRPC_IMAGE
+    COMPOSE_PROJECT_NAME CONTAINER_NAME WEBTOP_IMAGE NGINX_IMAGE FRPC_IMAGE CLOUDFLARED_IMAGE
   write_env_section "Host user and project-local desktop home" \
     HOST_USER HOST_UID HOST_GID HOST_HOME CONTAINER_USER CONTAINER_HOSTNAME
   write_env_section "Network exposure detection" \
-    NETWORK_EXPOSURE NETWORK_EXPOSURE_REASON NETWORK_ROUTE_IPV4 NETWORK_ROUTE_IFACE NETWORK_PUBLIC_IPV4 NETWORK_PUBLIC_IP_SERVICE NETWORK_DEFAULT_SSLIP_DOMAIN NETWORK_PORT_80_STATE NETWORK_PORT_443_STATE
+    EXPOSURE_METHOD NETWORK_EXPOSURE NETWORK_EXPOSURE_REASON NETWORK_ROUTE_IPV4 NETWORK_ROUTE_IFACE NETWORK_PUBLIC_IPV4 NETWORK_PUBLIC_IP_SERVICE NETWORK_DEFAULT_SSLIP_DOMAIN NETWORK_PORT_80_STATE NETWORK_PORT_443_STATE
   write_env_section "Container session" \
     TZ WEBTOP_LANG WEBTOP_LANGUAGE WEBTOP_LC_ALL TITLE
   write_env_section "Display and GPU" \
@@ -157,6 +158,8 @@ mkdir -p "$(dirname "$output_file")" "$(dirname "$output_env")"
     GATEWAY_BIND GATEWAY_PORT GATEWAY_PUBLIC_BASE_URL GATEWAY_AUTH_PROVIDER GATEWAY_AUTH_INTERNAL_URI GATEWAY_TLS_CERT GATEWAY_TLS_KEY GATEWAY_TLS_SANS
   write_env_section "Public ACME" \
     ACME_ENABLED ACME_PROVIDER ACME_DOMAIN ACME_EMAIL ACME_CERT_NAME ACME_HTTP_PORT ACME_STAGING ACME_ALLOW_NO_EMAIL ACME_AUTO_RENEW
+  write_env_section "Cloudflare Tunnel" \
+    CLOUDFLARE_API_BASE_URL CLOUDFLARED_ORIGIN_URL CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_ZONE_ID CLOUDFLARE_HOSTNAME CLOUDFLARE_TUNNEL_NAME CLOUDFLARE_TUNNEL_ID CLOUDFLARED_TUNNEL_TOKEN CLOUDFLARE_DNS_PROXIED
   write_env_section "PAM auth helper" \
     PAM_AUTH_RUN_DIR PAM_AUTH_STATE_DIR PAM_AUTH_SOCKET_CONTAINER PAM_AUTH_SERVICE PAM_AUTH_ALLOWED_USERS PAM_AUTH_SESSION_TTL_SECONDS PAM_AUTH_COOKIE_NAME
   write_env_section "Authelia" \
@@ -170,12 +173,31 @@ include_frpc=false
 if profile_enabled frpc; then
   include_frpc=true
 fi
+include_cloudflare=false
+if profile_enabled cloudflare; then
+  include_cloudflare=true
+fi
+include_cloudflare_quick=false
+if profile_enabled cloudflare-quick; then
+  include_cloudflare_quick=true
+fi
 
 {
   printf 'name: "${COMPOSE_PROJECT_NAME:-kde-in-web-browser}"\n'
-  awk -v include_frpc="$include_frpc" '
+  awk \
+    -v include_frpc="$include_frpc" \
+    -v include_cloudflare="$include_cloudflare" \
+    -v include_cloudflare_quick="$include_cloudflare_quick" '
     NR == 1 && $0 == "---" { next }
     $0 ~ /^  frpc:$/ && include_frpc != "true" {
+      skip_service = 1
+      next
+    }
+    $0 ~ /^  cloudflared:$/ && include_cloudflare != "true" {
+      skip_service = 1
+      next
+    }
+    $0 ~ /^  cloudflared-quick:$/ && include_cloudflare_quick != "true" {
       skip_service = 1
       next
     }
@@ -187,7 +209,7 @@ fi
       if ($0 ~ /^      - /) next
       skip_profiles = 0
     }
-    $0 ~ /^    profiles:$/ && include_frpc == "true" {
+    $0 ~ /^    profiles:$/ && (include_frpc == "true" || include_cloudflare == "true" || include_cloudflare_quick == "true") {
       skip_profiles = 1
       next
     }

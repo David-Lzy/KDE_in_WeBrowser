@@ -53,7 +53,10 @@ python_check() {
 
 compose_check() {
   docker compose --env-file .env.example -f compose/webtop-kde.yml config --quiet \
-    && docker compose --env-file .env.example -f compose/webtop-kde.yml --profile frpc config --quiet
+    && docker compose --env-file .env.example -f compose/webtop-kde.yml --profile frpc config --quiet \
+    && docker compose --env-file .env.example -f compose/webtop-kde.yml --profile cloudflare config --quiet \
+    && docker compose --env-file .env.example -f compose/webtop-kde.yml --profile cloudflare-quick config --quiet \
+    && docker compose --env-file .env.example -f compose/webtop-kde.yml --profile frpc --profile cloudflare config --quiet
 }
 
 preset_compose_check() {
@@ -78,12 +81,14 @@ baota_render_check() {
   ENV_FILE=".env.example" \
     BAOTA_COMPOSE_FILE="${tmp_dir}/docker-compose.yml" \
     BAOTA_ENV_FILE="${tmp_dir}/.env" \
-    BAOTA_COMPOSE_PROFILES="frpc" \
+    BAOTA_COMPOSE_PROFILES="frpc,cloudflare,cloudflare-quick" \
     scripts/render-baota-compose.sh >/tmp/kde-in-webbrowser-baota-render.log \
     && docker compose --env-file "${tmp_dir}/.env" -f "${tmp_dir}/docker-compose.yml" config --quiet \
     && rg -q '^REPO_DIR=' "${tmp_dir}/.env" \
     && rg -q '\$\{HOST_HOME' "${tmp_dir}/docker-compose.yml" \
     && rg -q '^  frpc:' "${tmp_dir}/docker-compose.yml" \
+    && rg -q '^  cloudflared:' "${tmp_dir}/docker-compose.yml" \
+    && rg -q '^  cloudflared-quick:' "${tmp_dir}/docker-compose.yml" \
     || status=$?
 
   rm -rf "${tmp_dir}"
@@ -159,6 +164,152 @@ wizard_smoke_check() {
     && docker compose --env-file "${tmp_dir}/.env" -f compose/webtop-kde.yml config --quiet \
     || status=$?
 
+  rm -rf "${tmp_dir}"
+  return "${status}"
+}
+
+cloudflare_api_mock_check() {
+  local tmp_dir port_file port pid status
+  tmp_dir="$(mktemp -d)"
+  port_file="${tmp_dir}/port"
+  status=0
+
+  python3 - "${port_file}" <<'PY' &
+import json
+import sys
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlparse
+
+port_file = sys.argv[1]
+
+
+class Handler(BaseHTTPRequestHandler):
+    def log_message(self, fmt, *args):
+        return
+
+    def _body(self):
+        length = int(self.headers.get("Content-Length", "0") or "0")
+        if length:
+            return self.rfile.read(length)
+        return b""
+
+    def _send(self, payload, status=200):
+        data = json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _ok(self, result):
+        self._send({"success": True, "errors": [], "messages": [], "result": result})
+
+    def _fail(self, status=403, message="mock permission denied"):
+        self._send({"success": False, "errors": [{"code": 10000, "message": message}], "messages": []}, status)
+
+    def _authorized(self):
+        return self.headers.get("Authorization") == "Bearer good-token"
+
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+        if path == "/client/v4/user/tokens/verify":
+            if self._authorized():
+                self._ok({"id": "token-id", "status": "active"})
+            else:
+                self._fail(403, "token is not active or lacks access")
+            return
+        if not self._authorized():
+            self._fail()
+            return
+        if path == "/client/v4/accounts/acct/cfd_tunnel":
+            self._ok([])
+        elif path == "/client/v4/zones/zone/dns_records":
+            self._ok([])
+        elif path == "/client/v4/accounts/acct/cfd_tunnel/tunnel-id/token":
+            self._ok("run-token")
+        else:
+            self._fail(404, f"unexpected GET {path}")
+
+    def do_POST(self):
+        self._body()
+        parsed = urlparse(self.path)
+        path = parsed.path
+        if not self._authorized():
+            self._fail()
+            return
+        if path == "/client/v4/accounts/acct/cfd_tunnel":
+            self._ok({"id": "tunnel-id", "name": "kde-webtop-test"})
+        elif path == "/client/v4/zones/zone/dns_records":
+            self._ok({"id": "dns-id"})
+        else:
+            self._fail(404, f"unexpected POST {path}")
+
+    def do_PUT(self):
+        self._body()
+        parsed = urlparse(self.path)
+        path = parsed.path
+        if not self._authorized():
+            self._fail()
+            return
+        if path == "/client/v4/accounts/acct/cfd_tunnel/tunnel-id/configurations":
+            self._ok({"configured": True})
+        elif path == "/client/v4/zones/zone/dns_records/dns-id":
+            self._ok({"id": "dns-id"})
+        else:
+            self._fail(404, f"unexpected PUT {path}")
+
+
+server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+with open(port_file, "w", encoding="utf-8") as handle:
+    handle.write(str(server.server_address[1]))
+server.serve_forever()
+PY
+  pid=$!
+  for _ in $(seq 1 50); do
+    if [[ -s "${port_file}" ]]; then
+      break
+    fi
+    sleep 0.1
+  done
+  if [[ ! -s "${port_file}" ]]; then
+    kill "${pid}" 2>/dev/null || true
+    wait "${pid}" 2>/dev/null || true
+    rm -rf "${tmp_dir}"
+    return 1
+  fi
+  port="$(cat "${port_file}")"
+
+  cat > "${tmp_dir}/good.env" <<EOF
+CLOUDFLARE_API_BASE_URL=http://127.0.0.1:${port}/client/v4
+CLOUDFLARED_ORIGIN_URL=http://gateway-nginx:8080
+CLOUDFLARE_API_TOKEN=good-token
+CLOUDFLARE_ACCOUNT_ID=acct
+CLOUDFLARE_ZONE_ID=zone
+CLOUDFLARE_HOSTNAME=kde.example.com
+CLOUDFLARE_TUNNEL_NAME=kde-webtop-test
+CLOUDFLARE_DNS_PROXIED=true
+AUTHELIA_PUBLIC_BASE_URLS=https://127.0.0.1:18080
+EOF
+  cat > "${tmp_dir}/bad.env" <<EOF
+CLOUDFLARE_API_BASE_URL=http://127.0.0.1:${port}/client/v4
+CLOUDFLARE_API_TOKEN=bad-token
+CLOUDFLARE_ACCOUNT_ID=acct
+CLOUDFLARE_ZONE_ID=zone
+CLOUDFLARE_HOSTNAME=kde.example.com
+CLOUDFLARE_TUNNEL_NAME=kde-webtop-test
+EOF
+
+  scripts/setup-cloudflare-tunnel.sh --env-file "${tmp_dir}/good.env" --check-only >/tmp/kde-in-webbrowser-cloudflare-check.log \
+    && ! scripts/setup-cloudflare-tunnel.sh --env-file "${tmp_dir}/bad.env" --check-only >/tmp/kde-in-webbrowser-cloudflare-bad.log 2>&1 \
+    && scripts/setup-cloudflare-tunnel.sh --env-file "${tmp_dir}/good.env" >/tmp/kde-in-webbrowser-cloudflare-setup.log \
+    && rg -q '^CLOUDFLARE_TUNNEL_ID=tunnel-id$' "${tmp_dir}/good.env" \
+    && rg -q '^CLOUDFLARED_TUNNEL_TOKEN=run-token$' "${tmp_dir}/good.env" \
+    && rg -q '^GATEWAY_PUBLIC_BASE_URL=https://kde.example.com$' "${tmp_dir}/good.env" \
+    || status=$?
+
+  kill "${pid}" 2>/dev/null || true
+  wait "${pid}" 2>/dev/null || true
   rm -rf "${tmp_dir}"
   return "${status}"
 }
@@ -318,6 +469,7 @@ run_check "baota compose render" baota_render_check
 run_check "nginx gateway config" nginx_check
 run_check "installer smoke" install_smoke_check
 run_check "deployment wizard smoke" wizard_smoke_check
+run_check "cloudflare api mock" cloudflare_api_mock_check
 run_check "public path allowlist" public_path_check
 run_check "secret scan" secret_scan_check
 run_check "authelia config" authelia_config_check

@@ -7,9 +7,9 @@ scripts/validate.sh
 ```
 
 The script checks shell, Python, Compose rendering, bandwidth presets, NGINX
-gateway config, installer and deployment-wizard smoke behavior, Authelia config
-when present, and public-safe path and secret scans. It does not start or stop
-the desktop.
+gateway config, installer and deployment-wizard smoke behavior, Cloudflare API
+mock behavior, Authelia config when present, and public-safe path and secret
+scans. It does not start or stop the desktop.
 
 To include checks against an already running local deployment:
 
@@ -43,6 +43,7 @@ Use the gateway URL from `.env`, usually `https://127.0.0.1:18080`.
 | Docker terminal opens container shell | Docker profile opens a shell inside the webtop container. |
 | WeChat/QQ optional module launches when enabled | Desktop shortcuts launch enabled apps and data maps to `/config`. |
 | frpc optional module exposes only gateway when enabled | frpc points at `gateway-nginx:8443`, not raw Webtop ports. |
+| Cloudflare Tunnel exposes only gateway when enabled | named or quick tunnel points at `gateway-nginx:8080`, not raw Webtop ports. |
 
 ## Release Gate
 

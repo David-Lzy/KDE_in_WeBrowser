@@ -129,3 +129,30 @@ services:
       - gateway-nginx
     volumes:
       - "${FRPC_CONFIG_FILE:-../modules/frpc/frpc.toml}:/etc/frp/frpc.toml:ro"
+
+  cloudflared:
+    image: "${CLOUDFLARED_IMAGE:-cloudflare/cloudflared:latest}"
+    profiles:
+      - cloudflare
+    restart: unless-stopped
+    depends_on:
+      - gateway-nginx
+    environment:
+      TUNNEL_TOKEN: "${CLOUDFLARED_TUNNEL_TOKEN:-REPLACE_ME}"
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+
+  cloudflared-quick:
+    image: "${CLOUDFLARED_IMAGE:-cloudflare/cloudflared:latest}"
+    profiles:
+      - cloudflare-quick
+    restart: unless-stopped
+    depends_on:
+      - gateway-nginx
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --url
+      - "${CLOUDFLARED_ORIGIN_URL:-http://gateway-nginx:8080}"

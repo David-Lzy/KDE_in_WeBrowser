@@ -141,6 +141,7 @@ write_compose_local() {
 if confirm_overwrite ".env"; then
   scripts/detect-host-user.sh "${host_user}" > .env
   cat ".env.${preset}.example" >> .env
+  chmod 0600 .env
   echo "wrote .env using ${preset} preset"
 fi
 
