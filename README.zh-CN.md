@@ -2,6 +2,8 @@
 
 [English README](README.md) | [English docs](Doc/en/index.md) | [中文文档](Doc/zh-CN/index.md)
 
+![KDE in Web Browser 展示 Selkies、KDE Plasma、微信、QQ、剪贴板同步和输入法候选词](assets/kde-in-web-browser-promo.jpg)
+
 KDE in Web Browser 是一个运行在 Docker 里的持久化 KDE Plasma 桌面，通过
 Selkies 在浏览器里显示，并由带认证的 HTTPS 网关保护。它适合把微信、QQ、剪
 贴板同步、宿主机终端、远程 GUI 和常用桌面工具集中到一个长期运行的 Linux 桌

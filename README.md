@@ -2,6 +2,8 @@
 
 [中文说明](README.zh-CN.md) | [English docs](Doc/en/index.md) | [中文文档](Doc/zh-CN/index.md)
 
+![KDE in Web Browser running Selkies, KDE Plasma, WeChat, QQ, clipboard sync, and input method suggestions](assets/kde-in-web-browser-promo.jpg)
+
 KDE in Web Browser gives you a persistent KDE Plasma desktop in Docker, streamed
 through a browser with Selkies and protected by an authenticated HTTPS gateway.
 It is designed for people who want one always-on Linux desktop for WeChat, QQ,
