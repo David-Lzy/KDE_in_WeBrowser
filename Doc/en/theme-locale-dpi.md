@@ -1,4 +1,4 @@
-# Theme Sync
+# Theme, Locale, and DPI
 
 Theme sync maps Selkies client state into KDE session preferences:
 
