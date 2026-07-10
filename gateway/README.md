@@ -25,7 +25,7 @@ Docker during certificate issuance and renewal.
 Install the host-side PAM helper after cloning:
 
 ```bash
-scripts/install-pam-auth-helper.sh
+scripts/deployment/actions/install-pam-auth-helper.sh
 ```
 
 The helper runs on the host as a systemd service and exposes only a Unix socket
@@ -36,7 +36,7 @@ Authelia runtime config, users, local SQLite storage, and branding assets are
 generated under ignored `data/authelia/` by:
 
 ```bash
-AUTHELIA_BOOTSTRAP_PASSWORD='change-this' scripts/ensure-authelia-config.sh
+AUTHELIA_BOOTSTRAP_PASSWORD='change-this' scripts/deployment/actions/ensure-authelia-config.sh
 ```
 
 Use the selected host account password as `AUTHELIA_BOOTSTRAP_PASSWORD` if the

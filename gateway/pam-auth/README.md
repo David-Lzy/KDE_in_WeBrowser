@@ -11,7 +11,7 @@ module tree.
 Install or refresh the host-side service:
 
 ```bash
-scripts/install-pam-auth-helper.sh
+scripts/deployment/actions/install-pam-auth-helper.sh
 ```
 
 The installer creates:

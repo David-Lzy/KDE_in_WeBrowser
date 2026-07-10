@@ -16,7 +16,7 @@ services:
       - "3001"
     restart: unless-stopped
     volumes:
-      - "${HOST_HOME:?set HOST_HOME or run scripts/detect-host-user.sh}:/config"
+      - "${HOST_HOME:?set HOST_HOME or run scripts/deployment/actions/detect-host-user.sh}:/config"
       - "../custom-cont-init.d:/custom-cont-init.d:ro"
       - "${WECHAT_PROFILE_DIR:-../data/wechat/.xwechat}:/config/.xwechat"
       - "${WECHAT_FILES_DIR:-../data/wechat/xwechat_files}:/wechat-xwechat-files"

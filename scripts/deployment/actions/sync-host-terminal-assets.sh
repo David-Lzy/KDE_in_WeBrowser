@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 env_file="${repo_root}/.env"
 host_user="${SUDO_USER:-${USER:-}}"
 target_home=""
@@ -9,7 +9,7 @@ include_system_font_matches=true
 
 usage() {
   cat <<'EOF'
-usage: scripts/sync-host-terminal-assets.sh [options]
+usage: scripts/deployment/actions/sync-host-terminal-assets.sh [options]
 
 Copy the selected host user's terminal-facing assets into the project-local
 desktop home mounted as /config.

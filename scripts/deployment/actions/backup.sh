@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 timestamp="$(date +%Y%m%d-%H%M%S)"
 backup_dir="${1:-${repo_root}/backups/${timestamp}}"
 

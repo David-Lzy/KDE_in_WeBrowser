@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "${repo_root}"
 
 env_file=".env"
@@ -9,7 +9,7 @@ check_only=false
 
 usage() {
   cat <<'EOF'
-usage: scripts/setup-cloudflare-tunnel.sh [options]
+usage: scripts/deployment/actions/setup-cloudflare-tunnel.sh [options]
 
 Create or update a Cloudflare named tunnel from .env settings.
 

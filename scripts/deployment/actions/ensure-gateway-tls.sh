@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
+cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 
 cert="${GATEWAY_TLS_CERT:-ssl/kde-webtop.crt}"
 key="${GATEWAY_TLS_KEY:-ssl/kde-webtop.key}"

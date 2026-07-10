@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 env_file="${repo_root}/.env"
 install_certbot=true
 
 usage() {
   cat <<'EOF'
-usage: scripts/setup-public-acme.sh [options]
+usage: scripts/deployment/actions/setup-public-acme.sh [options]
 
 Issue a Let's Encrypt certificate for the public gateway domain using Certbot
 standalone HTTP-01 validation, install renewal hooks, and deploy the certificate
@@ -146,14 +146,14 @@ if [[ "${staging}" == "true" ]]; then
 fi
 
 certbot "${certbot_args[@]}"
-"${repo_root}/scripts/deploy-acme-cert.sh" --env-file "${env_file}"
+"${repo_root}/scripts/deployment/actions/deploy-acme-cert.sh" --env-file "${env_file}"
 
 safe_name="$(printf '%s' "${cert_name}" | tr -c 'A-Za-z0-9_.-' '_')"
 hook_dir="/etc/letsencrypt/renewal-hooks/deploy"
 install -d -m 755 "${hook_dir}"
 cat >"${hook_dir}/kde-webtop-${safe_name}.sh" <<EOF
 #!/bin/sh
-exec "${repo_root}/scripts/deploy-acme-cert.sh" --env-file "${env_file}"
+exec "${repo_root}/scripts/deployment/actions/deploy-acme-cert.sh" --env-file "${env_file}"
 EOF
 chmod 755 "${hook_dir}/kde-webtop-${safe_name}.sh"
 

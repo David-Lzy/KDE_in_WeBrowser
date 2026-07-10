@@ -12,7 +12,7 @@ Available presets:
 Generate `.env`, then append one preset:
 
 ```bash
-scripts/detect-host-user.sh "$USER" > .env
+scripts/deployment/actions/detect-host-user.sh "$USER" > .env
 cat .env.balanced.example >> .env
 $EDITOR .env
 ```

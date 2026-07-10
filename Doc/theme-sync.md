@@ -13,7 +13,7 @@ At container startup, `custom-cont-init.d/65-theme-sync.sh` installs:
 
 `custom-cont-init.d/55-kde-session-prefs.sh` also writes
 `/config/.config/plasma-localerc` from `WEBTOP_LANG`, `WEBTOP_LANGUAGE`, and
-`WEBTOP_LC_ALL`. `scripts/detect-host-user.sh` prefers the host user's
+`WEBTOP_LC_ALL`. `scripts/deployment/actions/detect-host-user.sh` prefers the host user's
 `~/.config/plasma-localerc` and `~/.pam_environment` before falling back to the
 system locale.
 

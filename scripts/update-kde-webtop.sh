@@ -7,7 +7,7 @@ set -a
 source .env
 set +a
 
-scripts/ensure-gateway-tls.sh
+scripts/deployment/actions/ensure-gateway-tls.sh
 
 compose=(
   docker compose

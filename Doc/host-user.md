@@ -6,7 +6,7 @@ project-local desktop home into the container as `/config`.
 Generate a local `.env` file:
 
 ```bash
-scripts/detect-host-user.sh "$USER" > .env
+scripts/deployment/actions/detect-host-user.sh "$USER" > .env
 $EDITOR .env
 ```
 

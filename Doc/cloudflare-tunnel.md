@@ -17,7 +17,7 @@ test because the generated URL is not stable.
 Run the wizard:
 
 ```bash
-scripts/configure-deployment.sh
+scripts/deployment/configure.sh
 ```
 
 When network detection reports `private_or_nat`, choose:
@@ -43,7 +43,7 @@ Recommended permissions:
 The wizard validates the token before writing the final local config. If the
 check fails, enter a corrected token or type `skip`.
 
-After validation, `scripts/setup-cloudflare-tunnel.sh` creates or reuses the
+After validation, `scripts/deployment/actions/setup-cloudflare-tunnel.sh` creates or reuses the
 named tunnel, writes the ingress rule, creates or updates the DNS CNAME, gets
 the tunnel run token, and writes it to `.env`.
 

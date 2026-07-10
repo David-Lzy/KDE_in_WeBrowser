@@ -89,8 +89,9 @@ Main components:
 - `gateway/nginx/`: HTTPS reverse proxy and `auth_request` gateway.
 - `gateway/pam-auth/`: host-side PAM auth helper.
 - `modules/wechat-qq/`: WeChat/QQ image layer and launcher assets.
-- `scripts/`: installer, deployment wizard, Baota renderer, validation, TLS,
-  Cloudflare Tunnel, PAM helper, SSH key, and maintenance scripts.
+- `scripts/deployment/`: installer, deployment wizard, Baota renderer, TLS,
+  Cloudflare Tunnel, PAM helper, SSH key, and host-side deployment actions.
+- `scripts/`: validation and runtime maintenance scripts.
 - `Doc/`: focused documentation for install, architecture, exposure, terminals,
   theme sync, validation, and WeChat/QQ data.
 
@@ -99,7 +100,7 @@ Main components:
 Recommended interactive setup:
 
 ```bash
-scripts/configure-deployment.sh
+scripts/deployment/configure.sh
 ```
 
 The wizard asks for Chinese or English prompts first. Press Enter to use the
@@ -114,7 +115,7 @@ manual domain with Let's Encrypt HTTP-01 certificates and automatic renewal.
 Unattended local setup with recommended defaults:
 
 ```bash
-scripts/configure-deployment.sh --language en --defaults --force --start
+scripts/deployment/configure.sh --language en --defaults --force --start
 ```
 
 This still requires Docker, Docker Compose, and root/passwordless sudo for the
@@ -124,7 +125,7 @@ skipped unless you provide them interactively or edit local ignored files.
 Fast local setup:
 
 ```bash
-scripts/install.sh --preset balanced
+scripts/deployment/install.sh --preset balanced
 docker compose --env-file .env -f compose/webtop-kde.yml up -d
 ```
 
@@ -137,7 +138,7 @@ https://127.0.0.1:18080
 For Baota/BT Panel:
 
 ```bash
-scripts/render-baota-compose.sh
+scripts/deployment/actions/render-baota-compose.sh
 docker compose --env-file data/baota/.env -f data/baota/docker-compose.yml up -d
 ```
 

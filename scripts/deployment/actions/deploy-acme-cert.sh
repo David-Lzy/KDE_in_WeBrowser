@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 env_file="${repo_root}/.env"
 reload_gateway=true
 
 usage() {
   cat <<'EOF'
-usage: scripts/deploy-acme-cert.sh [options]
+usage: scripts/deployment/actions/deploy-acme-cert.sh [options]
 
 Copy the current Let's Encrypt certificate into the gateway TLS files and
 reload gateway-nginx when it is running.

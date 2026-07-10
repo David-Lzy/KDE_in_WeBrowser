@@ -7,20 +7,20 @@ This directory contains reusable Docker Compose templates for the project.
 Generate local deployment files and start the stack:
 
 ```bash
-scripts/configure-deployment.sh
+scripts/deployment/configure.sh
 ```
 
 For a minimal scripted setup:
 
 ```bash
-scripts/install.sh --preset balanced
+scripts/deployment/install.sh --preset balanced
 docker compose --env-file .env -f compose/webtop-kde.yml up -d
 ```
 
 Baota/BT Panel should use the generated pair:
 
 ```bash
-scripts/render-baota-compose.sh
+scripts/deployment/actions/render-baota-compose.sh
 docker compose --env-file data/baota/.env -f data/baota/docker-compose.yml up -d
 ```
 
@@ -188,5 +188,5 @@ this file and sets `FRPC_CONFIG_FILE` in `.env` when a custom path is selected.
 
 Cloudflare named tunnel runs with `--profile cloudflare`. Cloudflare quick
 tunnel runs with `--profile cloudflare-quick`. The deployment wizard can set
-both modes, and `scripts/setup-cloudflare-tunnel.sh` configures the named
+both modes, and `scripts/deployment/actions/setup-cloudflare-tunnel.sh` configures the named
 tunnel through the Cloudflare API.

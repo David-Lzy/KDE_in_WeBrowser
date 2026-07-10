@@ -166,7 +166,7 @@ if [[ -f "${key}" ]]; then
   )
 else
   printf '\033[1;31mSSH key missing: %s\033[0m\n' "${key}" >&2
-  printf 'Run scripts/setup-host-ssh-key.sh on the Docker host, then reopen this terminal.\n' >&2
+  printf 'Run scripts/deployment/actions/setup-host-ssh-key.sh on the Docker host, then reopen this terminal.\n' >&2
   exit 1
 fi
 

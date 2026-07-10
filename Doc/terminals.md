@@ -19,7 +19,7 @@ On Linux Docker, Compose maps `host.docker.internal` to the Docker host through
 
 - `ENABLE_TERMINAL_INTEGRATION`: set to `false` to skip all terminal setup.
 - `HOST_SSH_HOST`: host name or IP for the host terminal.
-- `HOST_SSH_PORT`: SSH port. `scripts/detect-host-user.sh` reads
+- `HOST_SSH_PORT`: SSH port. `scripts/deployment/actions/detect-host-user.sh` reads
   `ssh.socket` when available; Compose falls back to `22` if the variable is
   unset.
 - `HOST_SSH_TARGET`: optional full SSH target. If empty, the container uses
@@ -40,7 +40,7 @@ Run this once on the Docker host to enable passwordless Host SSH Terminal
 logins:
 
 ```bash
-scripts/setup-host-ssh-key.sh
+scripts/deployment/actions/setup-host-ssh-key.sh
 ```
 
 The script generates the key under `/config/.ssh`, appends the public key to the
@@ -50,7 +50,7 @@ public-key login with password authentication disabled.
 To refresh terminal fonts and Konsole settings later, run:
 
 ```bash
-scripts/sync-host-terminal-assets.sh
+scripts/deployment/actions/sync-host-terminal-assets.sh
 docker restart kde-webtop
 ```
 

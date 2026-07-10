@@ -36,7 +36,7 @@ HTTP-01 challenge, then closes it.
 
 ## Renewal
 
-`scripts/setup-public-acme.sh` uses Certbot standalone HTTP-01 mode. It
+`scripts/deployment/actions/setup-public-acme.sh` uses Certbot standalone HTTP-01 mode. It
 requests the certificate, copies the issued `fullchain.pem` and `privkey.pem`
 into the gateway TLS paths, and reloads `gateway-nginx`.
 
@@ -48,7 +48,7 @@ When `ACME_AUTO_RENEW=true`, the script installs:
 /etc/letsencrypt/renewal-hooks/deploy/kde-webtop-*.sh
 ```
 
-The renewal hook calls `scripts/deploy-acme-cert.sh`, so renewed certificates
+The renewal hook calls `scripts/deployment/actions/deploy-acme-cert.sh`, so renewed certificates
 are copied back into the project `ssl/` directory and NGINX is reloaded.
 
 ## Manual Commands
@@ -56,13 +56,13 @@ are copied back into the project `ssl/` directory and NGINX is reloaded.
 After `.env` is ready and the stack is running:
 
 ```bash
-sudo scripts/setup-public-acme.sh --env-file .env
+sudo scripts/deployment/actions/setup-public-acme.sh --env-file .env
 ```
 
 To redeploy an already issued certificate:
 
 ```bash
-sudo scripts/deploy-acme-cert.sh --env-file .env
+sudo scripts/deployment/actions/deploy-acme-cert.sh --env-file .env
 ```
 
 For NAT, CGNAT, Tailscale-only, or LAN-only hosts, use frpc instead.

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+actions_dir="${repo_root}/scripts/deployment/actions"
 host_user="${USER:-}"
 preset="balanced"
 force="false"
@@ -13,7 +14,7 @@ mounts=()
 
 usage() {
   cat <<'EOF'
-usage: scripts/install.sh [options]
+usage: scripts/deployment/install.sh [options]
 
 Options:
   --user USER              Host user to map into /config.
@@ -103,7 +104,7 @@ fi
 cd "${repo_root}"
 
 if [[ -e .env || -e compose.local.yml ]]; then
-  scripts/backup.sh >/dev/null
+  "${actions_dir}/backup.sh" >/dev/null
 fi
 
 confirm_overwrite() {
@@ -139,7 +140,7 @@ write_compose_local() {
 }
 
 if confirm_overwrite ".env"; then
-  scripts/detect-host-user.sh "${host_user}" > .env
+  "${actions_dir}/detect-host-user.sh" "${host_user}" > .env
   cat ".env.${preset}.example" >> .env
   chmod 0600 .env
   echo "wrote .env using ${preset} preset"
@@ -152,7 +153,7 @@ elif [[ "${#mounts[@]}" -eq 0 ]]; then
   echo "no extra mounts requested; compose.local.yml not modified"
 fi
 
-scripts/ensure-gateway-tls.sh
+"${actions_dir}/ensure-gateway-tls.sh"
 
 read_env_key() {
   local key="$1"
@@ -178,7 +179,7 @@ if [[ "${terminal_integration}" == "true" && "${sync_terminal_assets}" == "true"
   if [[ "${sync_system_font_matches}" != "true" ]]; then
     sync_args+=(--no-system-font-matches)
   fi
-  scripts/sync-host-terminal-assets.sh "${sync_args[@]}"
+  "${actions_dir}/sync-host-terminal-assets.sh" "${sync_args[@]}"
 elif [[ "${skip_terminal_assets}" == "true" ]]; then
   echo "skipped host terminal asset sync"
 fi
@@ -187,14 +188,14 @@ if [[ "${gateway_auth_provider}" == "pam" ]]; then
   if [[ "${skip_pam_helper}" == "true" ]]; then
     echo "skipped PAM auth helper install"
   else
-    scripts/install-pam-auth-helper.sh --env-file .env
+    "${actions_dir}/install-pam-auth-helper.sh" --env-file .env
   fi
 fi
 
 if [[ "${gateway_auth_provider}" == "authelia" && -n "${AUTHELIA_BOOTSTRAP_PASSWORD:-}" ]]; then
-  scripts/ensure-authelia-config.sh
+  "${actions_dir}/ensure-authelia-config.sh"
 elif [[ "${gateway_auth_provider}" == "authelia" ]]; then
-  echo "set AUTHELIA_BOOTSTRAP_PASSWORD and run scripts/ensure-authelia-config.sh before first start"
+  echo "set AUTHELIA_BOOTSTRAP_PASSWORD and run scripts/deployment/actions/ensure-authelia-config.sh before first start"
 fi
 
 compose_cmd=(docker compose --env-file .env -f compose/webtop-kde.yml)

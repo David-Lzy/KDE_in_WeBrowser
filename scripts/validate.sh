@@ -41,8 +41,8 @@ need_command() {
 }
 
 shell_syntax_check() {
-  bash -n scripts/*.sh \
-    && bash -n custom-cont-init.d/*.sh
+  find scripts custom-cont-init.d -type f -name '*.sh' -print0 \
+    | xargs -0 -n 1 bash -n
 }
 
 python_check() {
@@ -82,7 +82,7 @@ baota_render_check() {
     BAOTA_COMPOSE_FILE="${tmp_dir}/docker-compose.yml" \
     BAOTA_ENV_FILE="${tmp_dir}/.env" \
     BAOTA_COMPOSE_PROFILES="frpc,cloudflare,cloudflare-quick" \
-    scripts/render-baota-compose.sh >/tmp/kde-in-webbrowser-baota-render.log \
+    scripts/deployment/actions/render-baota-compose.sh >/tmp/kde-in-webbrowser-baota-render.log \
     && docker compose --env-file "${tmp_dir}/.env" -f "${tmp_dir}/docker-compose.yml" config --quiet \
     && rg -q '^REPO_DIR=' "${tmp_dir}/.env" \
     && rg -q '\$\{HOST_HOME' "${tmp_dir}/docker-compose.yml" \
@@ -133,7 +133,7 @@ install_smoke_check() {
   tmp_mount="$(mktemp -d)"
   local status=0
 
-  scripts/install.sh --force --preset low-bandwidth --skip-pam-helper --mount "${tmp_mount}:/mnt/validate:ro" >/tmp/kde-in-webbrowser-install-smoke.log \
+  scripts/deployment/install.sh --force --preset low-bandwidth --skip-pam-helper --mount "${tmp_mount}:/mnt/validate:ro" >/tmp/kde-in-webbrowser-install-smoke.log \
     && test -s .env \
     && test -s compose.local.yml \
     && rg -q '^AUTHELIA_CONFIG_DIR=' .env \
@@ -150,7 +150,7 @@ wizard_smoke_check() {
   tmp_dir="$(mktemp -d)"
   local status=0
 
-  scripts/configure-deployment.sh \
+  scripts/deployment/configure.sh \
     --language en \
     --defaults \
     --force \
@@ -300,9 +300,9 @@ CLOUDFLARE_HOSTNAME=kde.example.com
 CLOUDFLARE_TUNNEL_NAME=kde-webtop-test
 EOF
 
-  scripts/setup-cloudflare-tunnel.sh --env-file "${tmp_dir}/good.env" --check-only >/tmp/kde-in-webbrowser-cloudflare-check.log \
-    && ! scripts/setup-cloudflare-tunnel.sh --env-file "${tmp_dir}/bad.env" --check-only >/tmp/kde-in-webbrowser-cloudflare-bad.log 2>&1 \
-    && scripts/setup-cloudflare-tunnel.sh --env-file "${tmp_dir}/good.env" >/tmp/kde-in-webbrowser-cloudflare-setup.log \
+  scripts/deployment/actions/setup-cloudflare-tunnel.sh --env-file "${tmp_dir}/good.env" --check-only >/tmp/kde-in-webbrowser-cloudflare-check.log \
+    && ! scripts/deployment/actions/setup-cloudflare-tunnel.sh --env-file "${tmp_dir}/bad.env" --check-only >/tmp/kde-in-webbrowser-cloudflare-bad.log 2>&1 \
+    && scripts/deployment/actions/setup-cloudflare-tunnel.sh --env-file "${tmp_dir}/good.env" >/tmp/kde-in-webbrowser-cloudflare-setup.log \
     && rg -q '^CLOUDFLARE_TUNNEL_ID=tunnel-id$' "${tmp_dir}/good.env" \
     && rg -q '^CLOUDFLARED_TUNNEL_TOKEN=run-token$' "${tmp_dir}/good.env" \
     && rg -q '^GATEWAY_PUBLIC_BASE_URL=https://kde.example.com$' "${tmp_dir}/good.env" \

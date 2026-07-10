@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 env_file="${repo_root}/.env"
 unit_name="kde-webtop-pam-auth.service"
 pam_service_name="kde-webtop"
 
 usage() {
   cat <<'EOF'
-usage: scripts/install-pam-auth-helper.sh [options]
+usage: scripts/deployment/actions/install-pam-auth-helper.sh [options]
 
 Installs and starts the host-side PAM auth helper used by gateway-nginx.
 

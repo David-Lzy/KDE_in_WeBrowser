@@ -3,7 +3,7 @@
 Recommended interactive setup:
 
 ```bash
-scripts/configure-deployment.sh
+scripts/deployment/configure.sh
 ```
 
 The wizard:
@@ -30,7 +30,7 @@ The wizard:
 Fully unattended local setup with recommended defaults:
 
 ```bash
-scripts/configure-deployment.sh --language en --defaults --force --start
+scripts/deployment/configure.sh --language en --defaults --force --start
 ```
 
 This path is intended for a fresh clone on a host that already has Docker and
@@ -59,7 +59,7 @@ Example dry run into temporary files:
 
 ```bash
 tmpdir="$(mktemp -d)"
-scripts/configure-deployment.sh \
+scripts/deployment/configure.sh \
   --language en \
   --defaults \
   --force \
@@ -74,26 +74,26 @@ The older non-interactive installer is still available for simple local
 deployments:
 
 ```bash
-scripts/install.sh --preset balanced
+scripts/deployment/install.sh --preset balanced
 ```
 
 The default gateway auth provider is PAM. The installer will ask for sudo when
 it installs the host-side PAM helper. For a dry run or CI smoke test, pass:
 
 ```bash
-scripts/install.sh --preset balanced --skip-pam-helper
+scripts/deployment/install.sh --preset balanced --skip-pam-helper
 ```
 
 You can also install or refresh the helper directly:
 
 ```bash
-scripts/install-pam-auth-helper.sh
+scripts/deployment/actions/install-pam-auth-helper.sh
 ```
 
 Generate the private Authelia config before the first start:
 
 ```bash
-AUTHELIA_BOOTSTRAP_PASSWORD='change-this' scripts/ensure-authelia-config.sh
+AUTHELIA_BOOTSTRAP_PASSWORD='change-this' scripts/deployment/actions/ensure-authelia-config.sh
 ```
 
 `AUTHELIA_BOOTSTRAP_PASSWORD` is not live PAM authentication. It is hashed into
@@ -127,7 +127,7 @@ If you use `--mount` or keep a hand-written local override, include it with
 For Baota/BT Panel, render the panel-facing files after `.env` is ready:
 
 ```bash
-scripts/render-baota-compose.sh
+scripts/deployment/actions/render-baota-compose.sh
 docker compose --env-file data/baota/.env -f data/baota/docker-compose.yml up -d
 ```
 
