@@ -193,7 +193,7 @@ TZ=${tz}
 WEBTOP_LANG=${locale_value}
 WEBTOP_LANGUAGE=${language_value}
 WEBTOP_LC_ALL=${locale_value}
-TITLE=KDE in Web Browser
+TITLE="KDE in Web Browser"
 
 SHM_SIZE=2gb
 DRI_DEVICE=/dev/dri
@@ -291,6 +291,6 @@ AUTHELIA_VERSION=4.39.20
 AUTHELIA_CONFIG_DIR=${data_root}/authelia
 AUTHELIA_PUBLIC_BASE_URLS=https://127.0.0.1:18080
 AUTHELIA_USER=${host_user}
-AUTHELIA_DISPLAY_NAME=KDE Web Desktop
+AUTHELIA_DISPLAY_NAME="KDE Web Desktop"
 AUTHELIA_EMAIL=${host_user}@localhost
 EOF
